@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "IGI",
+    "DRD",
+    "NEN"
+  ],
+  "key": {
+    "I": "minecraft:iron_ingot",
+    "G": "minecraft:glass",
+    "D": "minecraft:diamond",
+    "R": "minecraft:redstone",
+    "N": "minecraft:netherite_ingot",
+    "E": "minecraft:emerald"
+  },
+  "result": {
+    "count": 1,
+    "id": "minestreet:trading_station"
+  }
+}

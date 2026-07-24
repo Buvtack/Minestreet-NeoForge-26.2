@@ -1,0 +1,6 @@
+{
+  "parent": "minestreet:block/trading_station",
+  "textures": {
+    "layer0": "minestreet:block/trading_station"
+  }
+}

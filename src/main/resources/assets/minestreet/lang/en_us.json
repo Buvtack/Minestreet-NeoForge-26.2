@@ -1,3 +1,7 @@
 {
-  "block.minestreet.trading_station": "Trading Station"
+  "block.minestreet.trading_station": "Trading Station",
+
+  "minestreet.tradingPanel.title": "stock",
+  "minestreet.tradingPanel.buy": "BUY",
+  "minestreet.tradingPanel.sell": "SELL"
 }

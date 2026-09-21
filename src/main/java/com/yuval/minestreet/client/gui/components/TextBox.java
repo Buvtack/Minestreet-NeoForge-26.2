@@ -1,10 +1,13 @@
 package com.yuval.minestreet.client.gui.components;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
+import org.lwjgl.glfw.GLFW;
 
 public class TextBox extends EditBox {
 
@@ -12,8 +15,11 @@ public class TextBox extends EditBox {
     public short typedFor = 0;
     public boolean finishedTyping = false;
 
+    private ModLabel placeholder;
+
     public TextBox(Font font, int x, int y, int width, int height, Component narration) {
         super(font, x, y, width, height, narration);
+        placeholder = new ModLabel(x + 5, y + height / 2 - Minecraft.getInstance().font.lineHeight / 2, narration, 0xAAAAAAAA, ModLabel.Alignment.LEFT);
     }
 
     public void init() {
@@ -31,7 +37,23 @@ public class TextBox extends EditBox {
 
     public void render(GuiGraphicsExtractor graphics) {
         if (isFocused())
-            graphics.fill(getX() - 1, getY() - 1, getRight() + 1, getBottom() + 1, 0xFF34E4EA);
+            graphics.outline(getX() - 1, getY() - 1, getWidth() + 2, getHeight() + 2, 0xFF34E4EA);
+
+        if (getValue().isEmpty()) {
+            placeholder.render(graphics, 0, 0, 0);
+        }
+    }
+
+    @Override
+    public boolean keyPressed(KeyEvent event) {
+        if (isFocused()) {
+            if (event.key() == GLFW.GLFW_KEY_ESCAPE) {
+                setFocused(false);
+                return true;
+            }
+        }
+
+        return super.keyPressed(event);
     }
 
     @Override
@@ -39,5 +61,10 @@ public class TextBox extends EditBox {
         typedFor = 0;
         finishedTyping = false;
         return super.charTyped(event);
+    }
+
+    @Override
+    public void setFocused(boolean focused) {
+        super.setFocused(focused);
     }
 }

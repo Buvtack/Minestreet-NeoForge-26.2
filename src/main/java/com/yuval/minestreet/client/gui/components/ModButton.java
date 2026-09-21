@@ -5,6 +5,7 @@ import com.yuval.minestreet.WolfOfMinestreet;
 import com.yuval.minestreet.client.gui.ColorHelper;
 import com.yuval.minestreet.client.gui.ModColors;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipPositioner;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.sounds.SoundEngine;
@@ -21,6 +22,7 @@ public class ModButton extends DimensionalModComponent {
     private int backgroundColor;
     private int textColor;
     private TradingPanel panel;
+    private Component tooltip = null;
 
     private boolean clickable = false;
 
@@ -62,6 +64,11 @@ public class ModButton extends DimensionalModComponent {
         return this;
     }
 
+    public ModButton tooltip(Component tooltip) {
+        this.tooltip = tooltip;
+        return this;
+    }
+
     public ModButton build() {
         return this;
     }
@@ -96,7 +103,7 @@ public class ModButton extends DimensionalModComponent {
         graphics.blit(buttonTexture, x + halfWidth + remainder, y, x + width, y + height, 1.0f - ((float) halfWidth / 200.0f), 1.0f, 0.0f, 1.0f);
 
         //if (isMouseOver())
-        boolean selected = panel.getSelectedButton() == this;
+        boolean selected = panel.getSelectedButton() == this || panel.getSelectedInput() == this;
         int color = ColorHelper.lerpColor(fade(), backgroundColor, backgroundColor + ModColors.EXTRA_ALPHA);
         color = selected ? backgroundColor + ModColors.EXTRA_ALPHA + 0x11000000 : color;
         graphics.fill(x + 1, y + 1, x + width - 1, y + height - 1, color);
@@ -104,6 +111,9 @@ public class ModButton extends DimensionalModComponent {
             graphics.outline(x, y, width, height, backgroundColor + ModColors.EXTRA_ALPHA);
 
         text.render(graphics, mouseX, mouseY, partialTick);
+
+        if (tooltip != null && isMouseOver(mouseX, mouseY))
+            graphics.setTooltipForNextFrame(tooltip, mouseX, mouseY);
     }
 
     public void setText(ModLabel text) {

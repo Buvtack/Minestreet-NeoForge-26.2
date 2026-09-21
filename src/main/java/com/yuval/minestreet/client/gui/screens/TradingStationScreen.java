@@ -196,15 +196,10 @@ public class TradingStationScreen extends ModScreen<TradingStationMenu> {
 
     @Override
     public boolean keyPressed(KeyEvent event) {
-
-        if (searchStock != null && searchStock.isFocused()) {
-            if (event.key() == GLFW.GLFW_KEY_ESCAPE) {
-                searchStock.setFocused(false);
-                return true;
-            }
-
+        if (searchStock != null && searchStock.isFocused())
             return searchStock.keyPressed(event);
-        }
+        if (panel != null && panel.isFocused())
+            return panel.keyPressed(event);
 
         return super.keyPressed(event);
     }
@@ -222,8 +217,20 @@ public class TradingStationScreen extends ModScreen<TradingStationMenu> {
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
         if (searchStock.mouseClicked(event, doubleClick)) {
             searchStock.setFocused(true);
+            setFocused(searchStock);
+            searchStock.setCursorPosition(searchStock.getValue().length());
+            searchStock.setHighlightPos(searchStock.getCursorPosition());
+            panel.setFocused(false);
             return searchStock.mouseClicked(event, doubleClick);
         }
+        if (panel.mouseClicked(event, doubleClick)) {
+            panel.setFocused(true);
+            searchStock.setFocused(false);
+            return panel.mouseClicked(event, doubleClick);
+        }
+        searchStock.setFocused(false);
+        panel.setFocused(false);
+        setFocused(null);
 
         int mouseX = (int) event.x();
         int mouseY = (int) event.y();
@@ -264,6 +271,14 @@ public class TradingStationScreen extends ModScreen<TradingStationMenu> {
 
     public StockEntry getSelectedStock() {
         return selectedStock;
+    }
+
+    public ItemStack getSelectedStack() {
+        return selectedStack;
+    }
+
+    public void send() {
+
     }
 
     private class ModSlot {

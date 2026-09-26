@@ -1,17 +1,18 @@
 package com.yuval.minestreet.client.gui.components;
 
+import com.yuval.minestreet.client.gui.ModColor;
 import net.minecraft.network.chat.Component;
 
 public class ModLabel extends ModComponent {
 
     public Component content;
-    public int color;
+    public ModColor color;
 
     private int width;
     private int height;
     private Alignment alignment;
 
-    public ModLabel(int x, int y, Component content, int color, Alignment alignment) {
+    public ModLabel(int x, int y, Component content, ModColor color, Alignment alignment) {
         super(x, y);
         this.content = content;
         this.color = color;
@@ -29,7 +30,7 @@ public class ModLabel extends ModComponent {
     @Override
     public void doRender() {
         int textX = alignment == Alignment.CENTER ? x - width / 2 : (alignment == Alignment.RIGHT ? x - width : x);
-        graphics.text(font, content, textX, y, color);
+        graphics.text(font, content, textX, y, color.color);
     }
 
     public void setContent(Component content) {

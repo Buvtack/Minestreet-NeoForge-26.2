@@ -1,17 +1,23 @@
 package com.yuval.minestreet.client.gui.screens;
 
 import com.google.gson.JsonObject;
+import com.yuval.minestreet.CommonModHelper;
 import com.yuval.minestreet.StockMarket;
+import com.yuval.minestreet.StockMarketKeys;
 import com.yuval.minestreet.WolfOfMinestreet;
-import com.yuval.minestreet.client.gui.components.StockEntry;
-import com.yuval.minestreet.client.gui.components.TextBox;
-import com.yuval.minestreet.client.gui.components.TradingPanel;
-import com.yuval.minestreet.network.packets.RequestStockPacket;
+import com.yuval.minestreet.client.Positions;
+import com.yuval.minestreet.client.StockMarketClient;
+import com.yuval.minestreet.client.gui.components.*;
+import com.yuval.minestreet.common.Order;
+import com.yuval.minestreet.common.Position;
+import com.yuval.minestreet.network.packets.SearchStockPacket;
+import com.yuval.minestreet.network.packets.SendOrderPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
@@ -20,11 +26,8 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
-import org.lwjgl.glfw.GLFW;
 
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 public class TradingStationScreen extends ModScreen<TradingStationMenu> {
 
@@ -38,6 +41,8 @@ public class TradingStationScreen extends ModScreen<TradingStationMenu> {
     private ModSlot selectedSlot;
     private ItemStack selectedStack;
     private StockEntry selectedStock;
+    private PositionEntry selectedPosition;
+    private ModEntry selectedEntry;
 
     private TextBox searchStock;
     private boolean shouldSendRequest = false;
@@ -46,6 +51,7 @@ public class TradingStationScreen extends ModScreen<TradingStationMenu> {
     private TradingPanel panel;
 
     private List<StockEntry> stocks;
+    private List<PositionEntry> positions;
 
     public TradingStationScreen(TradingStationMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
@@ -54,6 +60,7 @@ public class TradingStationScreen extends ModScreen<TradingStationMenu> {
         inventorySlots = new ModSlot[3][9];
         hotbarSlots = new ModSlot[9];
         stocks = new LinkedList<>();
+        positions = new LinkedList<>();
     }
 
     @Override
@@ -64,7 +71,11 @@ public class TradingStationScreen extends ModScreen<TradingStationMenu> {
         addRenderableWidget(searchStock);
 
         initInventory();
-        initStocks();
+
+        //CompletableFuture.runAsync(this::fetchInitialStocks).thenAcceptAsync(action -> {
+            initStocks();
+            initPositions();
+        //});
     }
 
     private void initInventory() {
@@ -96,14 +107,30 @@ public class TradingStationScreen extends ModScreen<TradingStationMenu> {
         }
     }
 
+    public void updateInventory() {
+        inventory = Minecraft.getInstance().player.getInventory();
+        initInventory();
+    }
+
     private void initStocks() {
         stocks.clear();
         int y = 30;
         int x = 5;
         for (String ticker : StockMarket.INITIAL_TICKERS) {
-            JsonObject stock = StockMarket.get(ticker);
+            JsonObject stock = StockMarketClient.get(ticker);
             stocks.add(new StockEntry(x, y, stock));
             y += 2 + StockEntry.HEIGHT;
+        }
+    }
+
+    private void initPositions() {
+        positions.clear();
+        int y = 30;
+        int x = width - PositionEntry.WIDTH - 5;
+        for (String id : Positions.positions.keySet()) {
+            Position position = Positions.positions.get(id);
+            positions.add(new PositionEntry(x, y, position));
+            y += 2 + PositionEntry.HEIGHT;
         }
     }
 
@@ -114,15 +141,22 @@ public class TradingStationScreen extends ModScreen<TradingStationMenu> {
             entry.tick();
         }
 
-        if (selectedStock != null && panel.getStock() != selectedStock.stock)
+        for (PositionEntry entry : positions)
+            entry.tick();
+
+        if (selectedEntry != null && selectedEntry instanceof StockEntry && panel.getStock() != selectedStock.stock)
             panel.setStock(selectedStock.stock);
+        else if (selectedEntry != null && selectedEntry instanceof PositionEntry && panel.getPosition() != selectedPosition.getPosition()) {
+            panel.setPosition(selectedPosition.getPosition());
+            selectedStack = new ItemStack(CommonModHelper.item(selectedPosition.getPosition().getItem()));
+        }
 
         panel.tick();
         searchStock.tick();
         String searched = searchStock.getValue();
         if (searchStock.finishedTyping && !searched.equals(lastSearched)) {
             if (!searched.isBlank())
-                ClientPacketDistributor.sendToServer(new RequestStockPacket(searched));
+                ClientPacketDistributor.sendToServer(new SearchStockPacket(searched));
             else
                 updateStockEntryList();
             //updateStockEntryList();
@@ -132,7 +166,6 @@ public class TradingStationScreen extends ModScreen<TradingStationMenu> {
 
     public void updateStockEntryList() {
         String searched = searchStock.getValue().toUpperCase();
-        stocks.clear();
         int i = 0;
         int limit = 15;
         int y = 30;
@@ -140,17 +173,24 @@ public class TradingStationScreen extends ModScreen<TradingStationMenu> {
         int gap = 2;
 
         Object tickerList = searched.isBlank() ? Arrays.asList(StockMarket.INITIAL_TICKERS) : StockMarket.storedStocks.keySet();
+        List<StockEntry> newStockList = new ArrayList<>();
         for (String ticker : (Iterable<String>) tickerList) {
             if (ticker.contains(searched)) {
                 if (i > limit)
                     break;
 
-                JsonObject stock = StockMarket.get(ticker);
-                stocks.add(new StockEntry(x, y, stock));
+                JsonObject stock = StockMarketClient.get(ticker);
+                newStockList.add(new StockEntry(x, y, stock));
                 y += gap + StockEntry.HEIGHT;
                 i++;
             }
         }
+
+        stocks = newStockList;
+    }
+
+    public void updatePositionEntryList() {
+        initPositions();
     }
 
     @Override
@@ -169,6 +209,7 @@ public class TradingStationScreen extends ModScreen<TradingStationMenu> {
         panel.render(graphics, mouseX, mouseY, partialTick);
 
         renderStocks(mouseX, mouseY, partialTick);
+        renderPositions(mouseX, mouseY, partialTick);
     }
 
     private void renderSlots(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
@@ -187,6 +228,19 @@ public class TradingStationScreen extends ModScreen<TradingStationMenu> {
     private void renderStocks(int mouseX, int mouseY, float partialTicks) {
         for (StockEntry entry : stocks)
             entry.render(graphics, mouseX, mouseY, partialTicks);
+    }
+
+    private void renderPositions(int mouseX, int mouseY, float partialTicks) {
+        for (PositionEntry entry : positions)
+            entry.render(graphics, mouseX, mouseY, partialTicks);
+    }
+
+    public void refresh() {
+        for (StockEntry entry : stocks)
+            entry.refresh();
+
+        for (PositionEntry entry : positions)
+            entry.refresh();
     }
 
     @Override
@@ -267,18 +321,53 @@ public class TradingStationScreen extends ModScreen<TradingStationMenu> {
 
     public void setSelectedStock(StockEntry stock) {
         selectedStock = stock;
+        selectedEntry = stock;
+        selectedPosition = null;
     }
 
     public StockEntry getSelectedStock() {
         return selectedStock;
     }
 
+    public void setSelectedPosition(PositionEntry position) {
+        selectedPosition = position;
+        selectedEntry = position;
+        selectedStock = null;
+    }
+
+    public PositionEntry getSelectedPosition() {
+        return selectedPosition;
+    }
+
+    public void setSelectedEntry(ModEntry entry) {
+        selectedEntry = entry;
+    }
+
+    public ModEntry getSelectedEntry() {
+        return selectedEntry;
+    }
+
     public ItemStack getSelectedStack() {
         return selectedStack;
     }
 
-    public void send() {
+    public List<StockEntry> getSearchedStocks() {
+        return stocks;
+    }
 
+    public void send() {
+        if (panel.getSelectedButton() == null)
+            return;
+
+        String ticker = selectedStock.stock.get(StockMarketKeys.TICKER).getAsString();
+        Identifier item = BuiltInRegistries.ITEM.getKey(selectedStack.getItem());
+        double amount = panel.getAmount();
+        double price = Double.parseDouble(StockMarket.getPrice(ticker));
+        UUID ownerUUID = Minecraft.getInstance().player.getUUID();
+        Order.Type type = panel.orderType();
+        Order order = new Order(ticker, item, amount, price, ownerUUID, type);
+        WolfOfMinestreet.LOGGER.info("Sent order to the server");
+        ClientPacketDistributor.sendToServer(new SendOrderPacket(order.toJsonString()));
     }
 
     private class ModSlot {

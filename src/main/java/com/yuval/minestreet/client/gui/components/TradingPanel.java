@@ -3,9 +3,12 @@ package com.yuval.minestreet.client.gui.components;
 import com.google.gson.JsonObject;
 import com.yuval.minestreet.StockMarketKeys;
 import com.yuval.minestreet.client.ModHelper;
+import com.yuval.minestreet.client.StockMarketClient;
 import com.yuval.minestreet.client.TranslationKeys;
 import com.yuval.minestreet.client.gui.ModColors;
 import com.yuval.minestreet.client.gui.screens.TradingStationScreen;
+import com.yuval.minestreet.common.Order;
+import com.yuval.minestreet.common.Position;
 import com.yuval.minestreet.mixin.client.ScreenAccessor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.input.KeyEvent;
@@ -37,12 +40,13 @@ public class TradingPanel extends ModComponent {
     private ModButton send;
 
     private JsonObject stock;
+    private Position position;
 
     public TradingPanel(int x, int y) {
         super(x, y);
-        title = new ModLabel(x + WIDTH / 2, y + 5, Component.translatable(TranslationKeys.TRADING_PANEL_TITLE), 0xFFFFFFFF, ModLabel.Alignment.CENTER);
-        selectedItemLabel = new ModLabel(x + 5, y + HEIGHT - 40, Component.translatable(TranslationKeys.TRADING_PANEL_SELECTED_ITEM), 0xFFFFFFFF, ModLabel.Alignment.LEFT);
-        selectedItemCountLabel = new ModLabel(selectedItemLabel.x + 5, selectedItemLabel.y, Component.empty(), 0xFFFFFFFF, ModLabel.Alignment.LEFT);
+        title = new ModLabel(x + WIDTH / 2, y + 5, Component.translatable(TranslationKeys.TRADING_PANEL_TITLE), ModColors.WHITE, ModLabel.Alignment.CENTER);
+        selectedItemLabel = new ModLabel(x + 5, y + HEIGHT - 40, Component.translatable(TranslationKeys.TRADING_PANEL_SELECTED_ITEM), ModColors.WHITE, ModLabel.Alignment.LEFT);
+        selectedItemCountLabel = new ModLabel(selectedItemLabel.x + 5, selectedItemLabel.y, Component.empty(), ModColors.WHITE, ModLabel.Alignment.LEFT);
 
         buy = ModButton.builder(x + WIDTH / 2 - 45, y + 20, 40, Component.translatable(TranslationKeys.TRADING_PANEL_BUY), ModLabel.Alignment.CENTER)
                 .onClick(() -> {selectedButton = buy;})
@@ -64,15 +68,15 @@ public class TradingPanel extends ModComponent {
                 .onClick(() -> selectedInput = byQuantity)
                 .color(0x55005EF5)
                 .panel(this)
-                .tooltip(Component.literal("Select this to enter the amount\n you want to buy/sell of the\n selected item"))
                 .build();
+        byQuantity.tooltip(new ModTooltip(byQuantity.x, byQuantity.y, 30, ModColors.STOCK_LIST_COLOR, Component.literal("Select this to enter the exact amount of the selected item you'd like to buy/sell.")));
 
         byPercentage = ModButton.builder(byQuantity.x + byQuantity.width, byQuantity.y, 20, Component.literal("%"), ModLabel.Alignment.CENTER)
                 .onClick(() -> selectedInput = byPercentage)
                 .color(0x55005EF5)
                 .panel(this)
-                .tooltip(Component.literal("Select this to enter the percentage you want\n to buy/sell of the selected item. \n(e.g. if you have 100 diamonds and you type \n50, you will buy/sell 50 diamonds)"))
                 .build();
+        byPercentage.tooltip(new ModTooltip(byPercentage.x, byPercentage.y, 30, ModColors.STOCK_LIST_COLOR, Component.literal("Select this to enter the percentage you want to buy/sell of the selected item. (e.g. if you have 100 diamonds and you type 50, you will buy/sell 50 diamonds)")));
 
         Component sendText = Component.literal("Send Order");
         int sendWidth = font.width(sendText.getString()) + 10;
@@ -111,7 +115,7 @@ public class TradingPanel extends ModComponent {
         if (stock == null)
             return;
 
-        graphics.fill(x, y, x + WIDTH, y + HEIGHT, ModColors.STOCK_LIST_COLOR);
+        graphics.fill(x, y, x + WIDTH, y + HEIGHT, ModColors.STOCK_LIST_COLOR.color);
         title.render(graphics, mouseX, mouseY, partialTick);
 
         if (ModHelper.selectedStack())
@@ -119,12 +123,12 @@ public class TradingPanel extends ModComponent {
 
         buy.render(graphics, mouseX, mouseY, partialTick);
         sell.render(graphics, mouseX, mouseY, partialTick);
-        byQuantity.render(graphics, mouseX, mouseY, partialTick);
-        byPercentage.render(graphics, mouseX, mouseY, partialTick);
         orderInput.extractRenderState(graphics, mouseX, mouseY, partialTick);
         orderInput.render(graphics);
         send.render(graphics, mouseX, mouseY, partialTick);
         renderSelectedStackCount();
+        byQuantity.render(graphics, mouseX, mouseY, partialTick);
+        byPercentage.render(graphics, mouseX, mouseY, partialTick);
     }
 
     private void renderSelectedStackCount() {
@@ -141,6 +145,12 @@ public class TradingPanel extends ModComponent {
         refresh();
     }
 
+    public void setPosition(Position position) {
+        JsonObject stock = StockMarketClient.get(position.getTicker());
+        setStock(stock);
+        this.position = position;
+    }
+
     private void refresh() {
         selectedButton = null;
     }
@@ -149,12 +159,28 @@ public class TradingPanel extends ModComponent {
         return stock;
     }
 
+    public Position getPosition() {
+        return position;
+    }
+
     public ModButton getSelectedButton() {
         return selectedButton;
     }
 
     public ModButton getSelectedInput() {
         return selectedInput;
+    }
+
+    public double getAmount() {
+        try {
+            return Double.parseDouble(orderInput.getValue());
+        } catch (Exception e) {
+            return 0.0D;
+        }
+    }
+
+    public Order.Type orderType() {
+        return selectedButton == buy ? Order.Type.BUY : Order.Type.SELL;
     }
 
     public boolean isFocused() {

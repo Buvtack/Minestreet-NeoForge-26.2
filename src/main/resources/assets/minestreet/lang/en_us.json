@@ -4,5 +4,6 @@
   "minestreet.tradingPanel.title": "stock",
   "minestreet.tradingPanel.buy": "BUY",
   "minestreet.tradingPanel.sell": "SELL",
-  "minestreet.tradingPanel.selectedItem": "Selected Item"
+  "minestreet.tradingPanel.selectedItem": "Selected Item",
+  "minestreet.gui.searchStock": "Search Instrument..."
 }

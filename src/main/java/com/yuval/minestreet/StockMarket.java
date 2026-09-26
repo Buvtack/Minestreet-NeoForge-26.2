@@ -1,13 +1,20 @@
 package com.yuval.minestreet;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.yuval.minestreet.network.packets.InitStockPacket;
-import com.yuval.minestreet.network.packets.SyncStockPacket;
+import com.google.gson.*;
+import com.yuval.minestreet.common.Order;
+import com.yuval.minestreet.common.Position;
+import com.yuval.minestreet.network.packets.OrderResponsePacket;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.storage.LevelResource;
 import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
+import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -17,6 +24,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -30,6 +39,7 @@ public class StockMarket {
 
     public static Map<String, JsonObject> storedStocks = new ConcurrentHashMap<>();
     public static final String[] INITIAL_TICKERS = { "VOO", "QQQ", "NVDA", "GOOGL", "AAPL", "TSLA", "MSFT", "META", "AMZN", "SMH", "VTI" };
+    public static final long CLEAN_INTERVAL = 300_000_000_000L;
 
 //    private static final String VOO = "{\"symbol\":\"VOO\",\"currency\":\"USD\",\"regularMarketPrice\":703.078,\"chartPreviousClose\":696.71}";
 //    private static final String QQQ = "{\"symbol\":\"QQQ\",\"currency\":\"USD\",\"regularMarketPrice\":7014.47,\"chartPreviousClose\":708.69}";
@@ -191,10 +201,184 @@ public class StockMarket {
     }
 
     public static void clean() {
-        storedStocks.entrySet().removeIf(entry -> {
-            JsonObject data = entry.getValue();
-            long fetchedTime = data.get(StockMarketKeys.FETCHED_TIME).getAsLong();
-            return System.nanoTime() - fetchedTime >= 300_000_000_000L;
-        });
+        //storedStocks.clear();
+        Set<String> keptTickers = new HashSet<>();
+
+        for (String ticker : INITIAL_TICKERS) {
+            fetchAndStore(ticker);
+            keptTickers.add(ticker);
+        }
+
+        if (ServerLifecycleHooks.getCurrentServer() != null)
+            for (ServerPlayer player : ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayers()) {
+                JsonObject root = Position.getFileAsJsonObject(getOrInitPathFile(player.getUUID()));
+                JsonArray array = root.get(StockMarketKeys.POSITIONS).getAsJsonArray();
+                for (JsonElement element : array) {
+                    String ticker = element.getAsJsonObject().get(StockMarketKeys.TICKER).getAsString();
+                    fetchAndStore(ticker);
+                    keptTickers.add(ticker);
+                }
+            }
+
+        storedStocks.keySet().removeIf(ticker -> !keptTickers.contains(ticker));
+    }
+
+    public static void execute(Order order) {
+        if (order.type == Order.Type.BUY) {
+            buy(order);
+        } else {
+            sell(order);
+        }
+    }
+
+    private static void buy(Order order) {
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        if (server == null)
+            return;
+
+        ServerPlayer owner = server.getPlayerList().getPlayer(order.ownerUUID);
+        if (owner == null)
+            return;
+
+        if (!owner.isCreative() && order.amount > CommonModHelper.getItemCount(owner, order.item))
+            return;
+
+        Position position = Position.get(order.ownerUUID, order.item, order.ticker);
+        Position result;
+        if (position != null) {
+            Position newPosition = Position.fromOrder(order);
+            Position toSave = position.combine(newPosition);
+            toSave.save();
+
+            result = toSave;
+        } else {
+            Position newPosition = Position.fromOrder(order);
+            newPosition.save();
+            result = newPosition;
+        }
+
+        String positionStr = result.toString();
+        if (!owner.isCreative())
+            consumeItem(owner, CommonModHelper.item(order.item), (int) order.amount);
+
+        PacketDistributor.sendToPlayer(owner, new OrderResponsePacket(true, positionStr));
+    }
+
+    private static void consumeItem(ServerPlayer owner, Item item, int count) {
+        Inventory inventory = owner.getInventory();
+
+        int remaining = count;
+        for (ItemStack stack : inventory) {
+            if (!stack.isEmpty() && stack.is(item)) {
+                int take = Math.min(remaining, stack.getCount());
+                stack.shrink(take);
+                remaining -= take;
+            }
+            if (remaining <= 0)
+                break;
+        }
+
+        ItemStack offhand = owner.getOffhandItem();
+        if (remaining > 0)
+            if (!offhand.isEmpty() && offhand.is(item))
+                offhand.shrink(Math.min(remaining, offhand.getCount()));
+
+        owner.containerMenu.broadcastChanges();
+    }
+
+    private static void sell(Order order) {
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        if (server == null)
+            return;
+
+        ServerPlayer owner = server.getPlayerList().getPlayer(order.ownerUUID);
+        if (owner == null)
+            return;
+
+        Position position = Position.get(order.ownerUUID, order.item, order.ticker);
+        if (position == null)
+            return;
+
+        Position newPosition = Position.fromOrder(order);
+        Position toSave = position.trim(newPosition);
+        reward(position, toSave, owner, order);
+
+        if (toSave != null) {
+            toSave.save();
+            PacketDistributor.sendToPlayer(owner, new OrderResponsePacket(true, toSave.toString()));
+        } else
+            position.delete();
+    }
+
+    private static void reward(Position position, Position toSave, ServerPlayer owner, Order order) {
+        int itemsToAdd = toSave != null ? (int)(position.getAmount() - toSave.getAmount()) : (int) position.getAmount();
+        if (itemsToAdd > 0) {
+            ItemStack givenItem = new ItemStack(CommonModHelper.item(order.item), itemsToAdd);
+            boolean fullyAdded = owner.getInventory().add(givenItem);
+            if (!fullyAdded && !givenItem.isEmpty()) {
+                ItemEntity itemEntity = owner.drop(givenItem, false, true);
+                if (itemEntity != null)
+                    itemEntity.setNoPickUpDelay();
+            }
+
+            owner.containerMenu.broadcastChanges();
+            owner.inventoryMenu.broadcastChanges();
+        }
+    }
+
+    public static Path getOrInitPositionPath() {
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        if (server == null)
+            return null;
+
+        Path worldPath = server.getWorldPath(LevelResource.ROOT);
+        Path positionPath = worldPath.resolve("minestreet/positions");
+        if (!Files.exists(positionPath)) {
+            try {
+                Files.createDirectories(positionPath);
+            } catch (Exception e) {
+                return null;
+            }
+        }
+
+        return positionPath;
+    }
+
+    public static Path getOrInitPathFile(UUID ownerUUID) {
+        Path positionPath = getOrInitPositionPath();
+        if (positionPath == null)
+            return null;
+
+        Path positionFile = positionPath.resolve(ownerUUID.toString() + ".json");
+        if (!Files.exists(positionFile)) {
+            try {
+                Files.createFile(positionFile);
+                init(positionFile);
+            } catch (IOException e) {
+                return null;
+            }
+            return null;
+        }
+
+        return positionFile;
+    }
+
+    private static void init(Path jsonFile) {
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        try (FileWriter writer = new FileWriter(jsonFile.toFile())) {
+            JsonArray emptyArray = new JsonArray();
+            JsonObject emptyRoot = new JsonObject();
+            emptyRoot.add(StockMarketKeys.POSITIONS, emptyArray);
+            gson.toJson(emptyRoot, writer);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static JsonArray positionsOf(ServerPlayer player) {
+        Path positionFile = getOrInitPathFile(player.getUUID());
+        JsonObject root = Position.getFileAsJsonObject(positionFile);
+        JsonArray positions = root.get(StockMarketKeys.POSITIONS).getAsJsonArray();
+        return positions;
     }
 }

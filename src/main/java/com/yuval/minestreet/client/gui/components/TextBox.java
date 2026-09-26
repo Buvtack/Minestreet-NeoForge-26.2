@@ -1,5 +1,6 @@
 package com.yuval.minestreet.client.gui.components;
 
+import com.yuval.minestreet.client.gui.ModColor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -19,7 +20,7 @@ public class TextBox extends EditBox {
 
     public TextBox(Font font, int x, int y, int width, int height, Component narration) {
         super(font, x, y, width, height, narration);
-        placeholder = new ModLabel(x + 5, y + height / 2 - Minecraft.getInstance().font.lineHeight / 2, narration, 0xAAAAAAAA, ModLabel.Alignment.LEFT);
+        placeholder = new ModLabel(x + 5, y + height / 2 - Minecraft.getInstance().font.lineHeight / 2, narration, new ModColor(0xAAAAAAAA), ModLabel.Alignment.LEFT);
     }
 
     public void init() {

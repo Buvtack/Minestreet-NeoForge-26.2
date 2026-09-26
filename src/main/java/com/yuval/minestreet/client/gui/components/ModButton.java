@@ -11,8 +11,12 @@ import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.sounds.SoundEngine;
 import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.util.FormattedCharSequence;
+
+import java.util.List;
 
 public class ModButton extends DimensionalModComponent {
 
@@ -22,7 +26,7 @@ public class ModButton extends DimensionalModComponent {
     private int backgroundColor;
     private int textColor;
     private TradingPanel panel;
-    private Component tooltip = null;
+    private ModTooltip tooltip = null;
 
     private boolean clickable = false;
 
@@ -41,7 +45,7 @@ public class ModButton extends DimensionalModComponent {
     private ModButton(int x, int y, int width, String text, ModLabel.Alignment alignment) {
         super(x, y, width, 20, 3);
         int labelX = alignment == ModLabel.Alignment.CENTER ? x + width / 2 : (alignment == ModLabel.Alignment.RIGHT ? x - width : x);
-        ModLabel label = new ModLabel(labelX, y + height / 3, Component.translatable(text), 0xFFFFFFFF, alignment);
+        ModLabel label = new ModLabel(labelX, y + height / 3, Component.translatable(text), ModColors.WHITE, alignment);
         this.text = label;
     }
 
@@ -64,7 +68,7 @@ public class ModButton extends DimensionalModComponent {
         return this;
     }
 
-    public ModButton tooltip(Component tooltip) {
+    public ModButton tooltip(ModTooltip tooltip) {
         this.tooltip = tooltip;
         return this;
     }
@@ -86,6 +90,9 @@ public class ModButton extends DimensionalModComponent {
 
             onClick.run();
         }
+
+        if (tooltip != null)
+            tooltip.tick();
     }
 
     private boolean isMouseOver() {
@@ -104,16 +111,17 @@ public class ModButton extends DimensionalModComponent {
 
         //if (isMouseOver())
         boolean selected = panel.getSelectedButton() == this || panel.getSelectedInput() == this;
-        int color = ColorHelper.lerpColor(fade(), backgroundColor, backgroundColor + ModColors.EXTRA_ALPHA);
-        color = selected ? backgroundColor + ModColors.EXTRA_ALPHA + 0x11000000 : color;
+        int color = ColorHelper.lerpColor(fade(), backgroundColor, backgroundColor + ModColors.EXTRA_ALPHA.color);
+        color = selected ? backgroundColor + ModColors.EXTRA_ALPHA.color + 0x11000000 : color;
         graphics.fill(x + 1, y + 1, x + width - 1, y + height - 1, color);
         if (selected)
-            graphics.outline(x, y, width, height, backgroundColor + ModColors.EXTRA_ALPHA);
+            graphics.outline(x, y, width, height, backgroundColor + ModColors.EXTRA_ALPHA.color);
 
         text.render(graphics, mouseX, mouseY, partialTick);
 
-        if (tooltip != null && isMouseOver(mouseX, mouseY))
-            graphics.setTooltipForNextFrame(tooltip, mouseX, mouseY);
+        if (tooltip != null && isMouseOver(mouseX, mouseY)) {
+            tooltip.render(graphics, mouseX, mouseY, partialTick);
+        }
     }
 
     public void setText(ModLabel text) {

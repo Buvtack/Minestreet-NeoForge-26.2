@@ -13,18 +13,18 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import java.util.concurrent.CompletableFuture;
 
-public record RequestStockPacket(String searched) implements CustomPacketPayload {
+public record SearchStockPacket(String searched) implements CustomPacketPayload {
 
-    public static final CustomPacketPayload.Type<RequestStockPacket> TYPE =
+    public static final CustomPacketPayload.Type<SearchStockPacket> TYPE =
             new Type<>(Identifier.fromNamespaceAndPath(WolfOfMinestreet.MODID, "request_stock"));
 
 
-    public static final StreamCodec<FriendlyByteBuf, RequestStockPacket> CODEC = StreamCodec.composite(
-            ByteBufCodecs.STRING_UTF8, RequestStockPacket::searched,
-            RequestStockPacket::new
+    public static final StreamCodec<FriendlyByteBuf, SearchStockPacket> CODEC = StreamCodec.composite(
+            ByteBufCodecs.STRING_UTF8, SearchStockPacket::searched,
+            SearchStockPacket::new
     );
 
-    public static void handle(RequestStockPacket packet, IPayloadContext context) {
+    public static void handle(SearchStockPacket packet, IPayloadContext context) {
         if (context.flow().isServerbound()) {
             CompletableFuture.runAsync(() -> {
                 StockMarket.searchAndStore(packet.searched);

@@ -1,7 +1,15 @@
 package com.yuval.minestreet;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.lwjgl.glfw.GLFW;
+
+import java.util.UUID;
 
 public class CommonModHelper {
 
@@ -27,5 +35,24 @@ public class CommonModHelper {
         float guiScale = Minecraft.getInstance().options.guiScale().get();
         int sub = (int) (guiScale / 2);
         return Math.max(guiScale - sub, 1) / guiScale;
+    }
+
+    public static Item item(Identifier id) {
+        return BuiltInRegistries.ITEM.getValue(id);
+    }
+
+    public static int getItemCount(ServerPlayer player, Identifier itemId) {
+        Item item = item(itemId);
+        int total = 0;
+
+        for (ItemStack stack : player.getInventory())
+            if (!stack.isEmpty() && stack.is(item))
+                total += stack.getCount();
+
+        ItemStack offhand = player.getOffhandItem();
+        if (!offhand.isEmpty() && offhand.is(item))
+            total += offhand.getCount();
+
+        return total;
     }
 }

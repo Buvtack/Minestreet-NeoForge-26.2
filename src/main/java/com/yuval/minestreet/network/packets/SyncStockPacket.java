@@ -43,7 +43,7 @@ public record SyncStockPacket(String stocks) implements CustomPacketPayload {
 
                 Screen screen = Minecraft.getInstance().gui.screen();
                 if (screen instanceof TradingStationScreen tsScreen) {
-                    tsScreen.updateStockEntryList();
+                    Minecraft.getInstance().execute(tsScreen::updateStockEntryList);
                 }
             });
         }

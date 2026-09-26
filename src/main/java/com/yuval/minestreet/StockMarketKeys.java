@@ -10,4 +10,12 @@ public class StockMarketKeys {
     public static final String NAME = "longName";
 
     public static final String QUOTE_TYPE = "quoteType";
+
+    public static final String ORDER_PRICE = "orderPrice";
+    public static final String POSITION_PRICE = "positionPrice";
+    public static final String POSITIONS = "positions";
+    public static final String ITEM = "item";
+    public static final String AMOUNT = "amount";
+    public static final String OWNER = "ownerUUID";
+    public static final String ORDER_TYPE = "orderType";
 }

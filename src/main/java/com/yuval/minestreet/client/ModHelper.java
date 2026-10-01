@@ -1,6 +1,8 @@
 package com.yuval.minestreet.client;
 
 import com.yuval.minestreet.WolfOfMinestreet;
+import com.yuval.minestreet.client.gui.ModColor;
+import com.yuval.minestreet.client.gui.ModColors;
 import com.yuval.minestreet.client.gui.screens.TradingStationScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
@@ -8,8 +10,6 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.Arrays;
@@ -79,9 +79,13 @@ public class ModHelper {
     }
 
     public static String format(double d) {
-        if (d >= 1_000_000)
+        if (d >= 10_000)
             return compactFormatter.format(d);
 
         return simpleFormatter.format(d);
+    }
+
+    public static ModColor getColor(Number num) {
+        return num.doubleValue() >= 0 ? (num.doubleValue() > 0 ? ModColors.PROFIT : ModColors.WHITE) : ModColors.LOSS;
     }
 }

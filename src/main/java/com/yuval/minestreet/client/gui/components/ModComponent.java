@@ -4,6 +4,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 
+import java.util.Map;
+
 public abstract class ModComponent {
 
     protected GuiGraphicsExtractor graphics;
@@ -17,6 +19,8 @@ public abstract class ModComponent {
 
     protected int fadeTime;
     protected int fade;
+
+    //private Map<>
 
     public ModComponent(int x, int y) {
         font = Minecraft.getInstance().font;

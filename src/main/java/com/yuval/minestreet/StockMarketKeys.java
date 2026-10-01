@@ -8,6 +8,7 @@ public class StockMarketKeys {
     public static final String CHART_PREVIOUS_CLOSE = "chartPreviousClose";
     public static final String FETCHED_TIME = "fetchedTime";
     public static final String NAME = "longName";
+    public static final String VOLUME = "volume";
 
     public static final String QUOTE_TYPE = "quoteType";
 

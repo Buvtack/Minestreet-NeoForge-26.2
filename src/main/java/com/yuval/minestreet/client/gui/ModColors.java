@@ -8,4 +8,6 @@ public class ModColors {
     public static final ModColor DARKER = new ModColor(0xFF101010);
     public static final ModColor DARKEST = new ModColor(0xFF080808);
     public static final ModColor WHITE = new ModColor(0xFFFFFFFF);
+    public static final ModColor PROFIT = new ModColor(0xFF08EE81);
+    public static final ModColor LOSS = new ModColor(0xFFF23645);
 }

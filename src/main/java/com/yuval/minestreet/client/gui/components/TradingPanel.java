@@ -13,11 +13,8 @@ import com.yuval.minestreet.mixin.client.ScreenAccessor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TextColor;
-import net.minecraft.resources.Identifier;
 
 public class TradingPanel extends ModComponent {
 
@@ -36,6 +33,9 @@ public class TradingPanel extends ModComponent {
     private ModButton byQuantity;
     private ModButton byPercentage;
     private ModButton selectedInput;
+
+    private ExtendedStockInfo stockInfo;
+    private ExtendedPositionInfo positionInfo;
 
     private ModButton send;
 
@@ -88,6 +88,9 @@ public class TradingPanel extends ModComponent {
                 .color(0x77005EF5)
                 .panel(this)
                 .build();
+
+        stockInfo = new ExtendedStockInfo(x + 5, y + 75);
+        positionInfo = new ExtendedPositionInfo(x + WIDTH / 2 - 5, y + 75);
     }
 
     @Override
@@ -99,6 +102,8 @@ public class TradingPanel extends ModComponent {
         orderInput.tick();
         send.tick();
         tickSelectedStackLabel();
+        stockInfo.tick();
+        positionInfo.tick();
     }
 
     private void tickSelectedStackLabel() {
@@ -127,6 +132,8 @@ public class TradingPanel extends ModComponent {
         orderInput.render(graphics);
         send.render(graphics, mouseX, mouseY, partialTick);
         renderSelectedStackCount();
+        stockInfo.render(graphics, mouseX, mouseY, partialTick);
+        positionInfo.render(graphics, mouseX, mouseY, partialTick);
         byQuantity.render(graphics, mouseX, mouseY, partialTick);
         byPercentage.render(graphics, mouseX, mouseY, partialTick);
     }
@@ -142,17 +149,24 @@ public class TradingPanel extends ModComponent {
     public void setStock(JsonObject stock) {
         this.stock = stock;
         title.setContent(Component.literal(stock.get(StockMarketKeys.NAME).getAsString()));
-        refresh();
+        stockInfo.setStock(stock);
+        reset();
+        positionInfo.setPosition(null);
     }
 
     public void setPosition(Position position) {
         JsonObject stock = StockMarketClient.get(position.getTicker());
         setStock(stock);
+        positionInfo.setPosition(position);
         this.position = position;
     }
 
-    private void refresh() {
+    private void reset() {
         selectedButton = null;
+    }
+
+    public void refresh() {
+
     }
 
     public JsonObject getStock() {

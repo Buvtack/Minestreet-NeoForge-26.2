@@ -14,6 +14,8 @@ out/
 
 .run/
 
+images/
+
 ### Eclipse ###
 .apt_generated
 .classpath

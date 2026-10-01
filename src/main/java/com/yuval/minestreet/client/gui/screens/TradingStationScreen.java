@@ -203,13 +203,12 @@ public class TradingStationScreen extends ModScreen<TradingStationMenu> {
         graphics.blit(TEXTURE, x, y, x + 384, y + 288, 0, 1, 0, 1);
         renderSlots(graphics, mouseX, mouseY);
 
-        searchStock.render(graphics);
         searchStock.extractRenderState(graphics, mouseX, mouseY, partialTick);
-
-        panel.render(graphics, mouseX, mouseY, partialTick);
+        searchStock.render(graphics);
 
         renderStocks(mouseX, mouseY, partialTick);
         renderPositions(mouseX, mouseY, partialTick);
+        panel.render(graphics, mouseX, mouseY, partialTick);
     }
 
     private void renderSlots(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
@@ -241,6 +240,8 @@ public class TradingStationScreen extends ModScreen<TradingStationMenu> {
 
         for (PositionEntry entry : positions)
             entry.refresh();
+
+        panel.refresh();
     }
 
     @Override

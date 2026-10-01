@@ -27,10 +27,11 @@ public class PositionEntry extends ModEntry {
         super(x, y);
 
         this.position = position;
-        ticker = new Section(position.getTicker(), x + 5, y, WIDTH / 4, HEIGHT);
-        worth = new Section(position.worth(), x + WIDTH / 4, y, WIDTH / 4, HEIGHT);
-        pnl = new Section(position.pnl(), x + WIDTH / 2, y, WIDTH / 4, HEIGHT);
-        pnlPercentage = new Section(position.pnlPercentage(), "%", x + 3 * WIDTH / 4, y, WIDTH / 4, HEIGHT);
+        int startX = x + 8;
+        ticker = new Section(position.getTicker(), startX, y, WIDTH / 4 - 1, HEIGHT);
+        worth = new Section(position.worth(), startX + WIDTH / 4 - 1, y, WIDTH / 4 - 1, HEIGHT);
+        pnl = new Section(position.pnl(), startX + WIDTH / 2 - 2, y, WIDTH / 4 - 1, HEIGHT);
+        pnlPercentage = new Section(position.pnlPercentage(), "%", startX + 3 * WIDTH / 4 - 3, y, WIDTH / 4, HEIGHT);
         item = new ItemStack(BuiltInRegistries.ITEM.getValue(position.getItem()));
     }
 
@@ -48,7 +49,7 @@ public class PositionEntry extends ModEntry {
 
     @Override
     public void doRender() {
-        graphics.fill(x, y, x + WIDTH, y + HEIGHT, getBackgroundColor());
+        graphics.fill(x - 4, y, x + WIDTH, y + HEIGHT, getBackgroundColor());
         ticker.render(0xFFFFFFFF);
         worth.render(0xFFFFFFFF);
         pnl.render(pnl.getColor());
@@ -56,7 +57,7 @@ public class PositionEntry extends ModEntry {
 
         graphics.pose().pushMatrix();
         graphics.pose().scale(0.75F);
-        graphics.item(item, (int) ((x - 12) / 0.75F), (int) (y / 0.75F));
+        graphics.item(item, (int) ((x - 4) / 0.75F), (int) ((y - 1) / 0.75F));
         graphics.pose().popMatrix();
     }
 

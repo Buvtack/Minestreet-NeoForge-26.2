@@ -94,13 +94,26 @@ public class StockMarket {
     private static JsonObject extractData(JsonObject raw) {
         JsonObject dataToStore = new JsonObject();
         JsonObject nestedData = raw.getAsJsonObject("chart").getAsJsonArray("result").get(0).getAsJsonObject().getAsJsonObject("meta");
+        JsonObject indicators = raw.getAsJsonObject("chart").getAsJsonArray("result").get(0).getAsJsonObject().getAsJsonObject("indicators");
         dataToStore.add(StockMarketKeys.TICKER, nestedData.get(StockMarketKeys.TICKER));
         dataToStore.add(StockMarketKeys.CURRENCY, nestedData.get(StockMarketKeys.CURRENCY));
         dataToStore.add(StockMarketKeys.PRICE, nestedData.get(StockMarketKeys.PRICE));
         dataToStore.add(StockMarketKeys.CHART_PREVIOUS_CLOSE, nestedData.get(StockMarketKeys.CHART_PREVIOUS_CLOSE));
         dataToStore.add(StockMarketKeys.NAME, nestedData.get(StockMarketKeys.NAME));
         dataToStore.add(StockMarketKeys.FETCHED_TIME, JsonParser.parseString(Long.toString(System.nanoTime())));
+        JsonArray volume = indicators.getAsJsonArray("quote").get(0).getAsJsonObject().getAsJsonArray(StockMarketKeys.VOLUME);
+        dataToStore.addProperty(StockMarketKeys.VOLUME, getVolume(volume));
         return dataToStore;
+    }
+
+    private static int getVolume(JsonArray volume) {
+        int volumeResult = 0;
+        for (JsonElement element : volume) {
+            try {
+                volumeResult += element.getAsInt();
+            } catch (Exception e) {}
+        }
+        return volumeResult;
     }
 
     public static void searchAndStore(String searched) {
@@ -332,9 +345,7 @@ public class StockMarket {
 
                     leftover -= added;
                     owner.level().addFreshEntity(itemEntity);
-                    //owner.drop(droppedStack, false, true);
                     WolfOfMinestreet.LOGGER.info("DROPPING ITEMS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-                    //Containers.dropItemStack(owner.level(), pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D, droppedStack);
                 }
             }
         });

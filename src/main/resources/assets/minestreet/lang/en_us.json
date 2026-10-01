@@ -5,5 +5,13 @@
   "minestreet.tradingPanel.buy": "BUY",
   "minestreet.tradingPanel.sell": "SELL",
   "minestreet.tradingPanel.selectedItem": "Selected Item",
-  "minestreet.gui.searchStock": "Search Instrument..."
+  "minestreet.gui.searchStock": "Search Asset...",
+  "minestreet.stockInfo.volume": "Volume: ",
+  "minestreet.stockInfo.price": "Price: ",
+  "minestreet.stockInfo.change": "Change: ",
+  "minestreet.stockInfo.changePercentage": "Change%: ",
+  "minestreet.positionInfo.pnl": "Profit / Loss: ",
+  "minestreet.positionInfo.pnlPercentage": "Profit / Loss%: ",
+  "minestreet.positionInfo.entryPrice": "Entry Price: ",
+  "minestreet.positionInfo.amount": "Item Quantity: "
 }

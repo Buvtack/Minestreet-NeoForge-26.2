@@ -2,7 +2,9 @@
   "required": true,
   "package": "com.yuval.minestreet.mixin",
   "compatibilityLevel": "JAVA_25",
-  "mixins": [],
+  "mixins": [
+
+  ],
   "client": [
     "client.ScreenAccessor"
   ],

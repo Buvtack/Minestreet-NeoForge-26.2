@@ -78,4 +78,9 @@ public class PositionEntry extends ModEntry {
     public Position getPosition() {
         return position;
     }
+
+    @Override
+    public String getTicker() {
+        return position.getTicker();
+    }
 }

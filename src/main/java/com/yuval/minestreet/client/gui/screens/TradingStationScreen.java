@@ -359,7 +359,7 @@ public class TradingStationScreen extends ModScreen<TradingStationMenu> {
         if (panel.getSelectedButton() == null)
             return;
 
-        String ticker = selectedStock.stock.get(StockMarketKeys.TICKER).getAsString();
+        String ticker = selectedEntry.getTicker();
         Identifier item = BuiltInRegistries.ITEM.getKey(selectedStack.getItem());
         double amount = panel.getAmount();
         double price = Double.parseDouble(StockMarket.getPrice(ticker));

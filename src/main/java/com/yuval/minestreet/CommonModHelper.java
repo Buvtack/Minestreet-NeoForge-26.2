@@ -4,8 +4,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.lwjgl.glfw.GLFW;
 
@@ -54,5 +56,27 @@ public class CommonModHelper {
             total += offhand.getCount();
 
         return total;
+    }
+
+    public static int getAvailableInventorySpace(ServerPlayer player, Item item) {
+        Inventory inventory = player.getInventory();
+        int maxStackSize = item.getDefaultMaxStackSize();
+        int result = 0;
+
+        for (int i = 0; i < 36; i++) {
+            ItemStack stack = inventory.getItem(i);
+            if (stack.isEmpty())
+                result += maxStackSize;
+            else if (stack.is(item))
+                result += (maxStackSize - stack.getCount());
+        }
+
+        return result;
+    }
+
+    public static void addItemToPlayer(ServerPlayer player, Item item, int amount) {
+        player.getInventory().add(new ItemStack(item, amount));
+        player.containerMenu.broadcastChanges();
+        player.inventoryMenu.broadcastChanges();
     }
 }

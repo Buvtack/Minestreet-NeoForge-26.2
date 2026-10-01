@@ -19,6 +19,7 @@ public abstract class ModEntry extends DimensionalModComponent {
     }
 
     public abstract void refresh();
+    public abstract String getTicker();
 
     protected class Section {
         private int x;

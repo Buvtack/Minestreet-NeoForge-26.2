@@ -92,9 +92,12 @@ public class StockEntry extends ModEntry {
         return baseColor;
     }
 
-
-
     public boolean isMouseOver(int mouseX, int mouseY) {
         return mouseX >= x && mouseX <= x + WIDTH && mouseY >= y && mouseY <= y + HEIGHT;
+    }
+
+    @Override
+    public String getTicker() {
+        return stock.get(StockMarketKeys.TICKER).getAsString();
     }
 }

@@ -4,8 +4,10 @@ import com.google.gson.*;
 import com.yuval.minestreet.common.Order;
 import com.yuval.minestreet.common.Position;
 import com.yuval.minestreet.network.packets.OrderResponsePacket;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Containers;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Item;
@@ -311,19 +313,31 @@ public class StockMarket {
     }
 
     private static void reward(Position position, Position toSave, ServerPlayer owner, Order order) {
-        int itemsToAdd = toSave != null ? (int)(position.getAmount() - toSave.getAmount()) : (int) position.getAmount();
-        if (itemsToAdd > 0) {
-            ItemStack givenItem = new ItemStack(CommonModHelper.item(order.item), itemsToAdd);
-            boolean fullyAdded = owner.getInventory().add(givenItem);
-            if (!fullyAdded && !givenItem.isEmpty()) {
-                ItemEntity itemEntity = owner.drop(givenItem, false, true);
-                if (itemEntity != null)
-                    itemEntity.setNoPickUpDelay();
-            }
+        owner.level().getServer().execute(() -> {
+            Item givenItem = CommonModHelper.item(position.getItem());
+            int itemsToAdd = toSave != null ? (int)(position.getAmount() - toSave.getAmount()) : (int) position.getAmount();
+            int availableSpace = CommonModHelper.getAvailableInventorySpace(owner, givenItem);
+            WolfOfMinestreet.LOGGER.info("AVAILABLE SPACE: " + availableSpace);
+            if (itemsToAdd <= availableSpace)
+                CommonModHelper.addItemToPlayer(owner, givenItem, itemsToAdd);
+            else {
+                int leftover = itemsToAdd - availableSpace;
+                CommonModHelper.addItemToPlayer(owner, givenItem, availableSpace);
+                while (leftover > 0) {
+                    int added = Math.min(leftover, 64);
+                    ItemStack droppedStack = new ItemStack(givenItem, added);
+                    BlockPos pos = owner.blockPosition().above();
+                    ItemEntity itemEntity = new ItemEntity(owner.level(), pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D, droppedStack);
+                    itemEntity.setPickUpDelay(100);
 
-            owner.containerMenu.broadcastChanges();
-            owner.inventoryMenu.broadcastChanges();
-        }
+                    leftover -= added;
+                    owner.level().addFreshEntity(itemEntity);
+                    //owner.drop(droppedStack, false, true);
+                    WolfOfMinestreet.LOGGER.info("DROPPING ITEMS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                    //Containers.dropItemStack(owner.level(), pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D, droppedStack);
+                }
+            }
+        });
     }
 
     public static Path getOrInitPositionPath() {

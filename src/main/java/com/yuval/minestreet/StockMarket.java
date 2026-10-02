@@ -377,12 +377,12 @@ public class StockMarket {
         Path positionFile = positionPath.resolve(ownerUUID.toString() + ".json");
         if (!Files.exists(positionFile)) {
             try {
+                Files.createDirectories(positionFile.getParent());
                 Files.createFile(positionFile);
                 init(positionFile);
             } catch (IOException e) {
                 return null;
             }
-            return null;
         }
 
         return positionFile;

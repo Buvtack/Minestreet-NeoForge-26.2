@@ -30,8 +30,8 @@ public class Order {
         JsonObject root = JsonParser.parseString(orderJson).getAsJsonObject();
         String ticker = root.get(StockMarketKeys.TICKER).getAsString();
         Identifier item = Identifier.parse(root.get(StockMarketKeys.ITEM).getAsString());
-        int amount = root.get(StockMarketKeys.AMOUNT).getAsInt();
-        int price = root.get(StockMarketKeys.ORDER_PRICE).getAsInt();
+        double amount = root.get(StockMarketKeys.AMOUNT).getAsDouble();
+        double price = root.get(StockMarketKeys.ORDER_PRICE).getAsDouble();
         UUID ownerUUID = UUID.fromString(root.get(StockMarketKeys.OWNER).getAsString());
         Type type = Type.values()[root.get(StockMarketKeys.ORDER_TYPE).getAsInt()];
         return new Order(ticker, item, amount, price, ownerUUID, type);

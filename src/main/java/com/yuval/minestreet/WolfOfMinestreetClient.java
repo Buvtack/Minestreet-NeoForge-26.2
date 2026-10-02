@@ -1,5 +1,6 @@
 package com.yuval.minestreet;
 
+import com.yuval.minestreet.client.Positions;
 import com.yuval.minestreet.client.StockMarketClient;
 import com.yuval.minestreet.network.Packets;
 import net.minecraft.client.Minecraft;
@@ -9,6 +10,7 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.gui.ConfigurationScreen;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
@@ -44,5 +46,10 @@ public class WolfOfMinestreetClient {
     static void onClientSetup(FMLClientSetupEvent event) {
         WolfOfMinestreet.LOGGER.info("HELLO FROM CLIENT SETUP");
         WolfOfMinestreet.LOGGER.info("MINECRAFT NAME >> {}", Minecraft.getInstance().getUser().getName());
+    }
+
+    @SubscribeEvent
+    static void onPlayerLogOut(ClientPlayerNetworkEvent.LoggingOut event) {
+        Positions.positions.clear();
     }
 }

@@ -90,12 +90,8 @@ public class TradingPanel extends ModComponent {
         Component sendText = Component.literal("Send Order");
         int sendWidth = font.width(sendText.getString()) + 10;
         send = ModButton.builder(x + WIDTH / 2 - sendWidth / 2, y + HEIGHT - 25, sendWidth, sendText, ModLabel.Alignment.CENTER)
-                .onClick(() -> {
-                    TradingStationScreen screen = (TradingStationScreen) ModHelper.screen();
-                    screen.send();
-                })
-                //.color(0x77005EF5)
-                .color(ModColors.NEUTRAL.transparensify(0.6F))
+                .onClick(ModHelper.tradingScreen()::send)
+                .color(ModColors.NEUTRAL.alphaify(0.15F))
                 .panel(this)
                 .build();
 
@@ -109,7 +105,10 @@ public class TradingPanel extends ModComponent {
         sell.tick();
         byQuantity.tick();
         byPercentage.tick();
-        closePosition.tick();
+
+        if (position != null)
+            closePosition.tick();
+
         orderInput.tick();
         send.tick();
         tickSelectedStackLabel();
@@ -203,7 +202,7 @@ public class TradingPanel extends ModComponent {
             if (selectedInput == byQuantity)
                 return Double.parseDouble(orderInput.getValue());
             else {
-                double fraction = Double.parseDouble(orderInput.getValue()) / 100.0D;
+                double fraction = Double.parseDouble(orderInput.getValue()) / 100;
                 TradingStationScreen screen = (TradingStationScreen) ModHelper.screen();
                 if (selectedButton == buy)
                     return ModHelper.getItemCount(screen.getSelectedStack()) * fraction;

@@ -378,6 +378,9 @@ public class TradingStationScreen extends ModScreen<TradingStationMenu> {
         if (type == Order.Type.SELL && selectedPosition == null)
             return;
 
+        if (selectedStack == null || selectedStack.isEmpty())
+            return;
+
         String ticker = selectedEntry.getTicker();
         Identifier item = BuiltInRegistries.ITEM.getKey(selectedStack.getItem());
         double amount = panel.getAmount();

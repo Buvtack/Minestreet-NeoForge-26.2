@@ -21,21 +21,13 @@ public class ExtendedStockInfo extends ModComponent {
     private JsonObject stock;
 
     public ExtendedStockInfo(int x, int y) {
-        super(x, y);
-        stock = null;
+        this(x, y, (JsonObject) null);
     }
 
     public ExtendedStockInfo(int x, int y, JsonObject stock) {
         super(x, y);
         setStock(stock);
-    }
 
-    public ExtendedStockInfo(int x, int y, Position position) {
-        this(x, y, StockMarket.get(position.getTicker()));
-    }
-
-    public void setStock(JsonObject stock) {
-        this.stock = stock;
         int gap = 2;
         volume = new ModLabel(x, y, Component.translatable(TranslationKeys.VOLUME), ModColors.WHITE, ModLabel.Alignment.LEFT);
         price = new ModLabel(x, volume.y + font.lineHeight + gap, Component.translatable(TranslationKeys.PRICE), ModColors.WHITE, ModLabel.Alignment.LEFT);
@@ -44,20 +36,15 @@ public class ExtendedStockInfo extends ModComponent {
         divYield = new ModLabel(x, changePercentage.y + font.lineHeight + gap, Component.translatable(TranslationKeys.DIVIDEND_YIELD), ModColors.WHITE, ModLabel.Alignment.LEFT);
     }
 
-    public void setStock(Position position) {
-        setStock(StockMarket.get(position.getTicker()));
+    public ExtendedStockInfo(int x, int y, Position position) {
+        this(x, y, StockMarket.get(position.getTicker()));
     }
 
-    @Override
-    public void tick() {
+    public void setStock(JsonObject stock) {
         if (stock == null)
             return;
 
-        volume.tick();
-        price.tick();
-        change.tick();
-        changePercentage.tick();
-        divYield.tick();
+        this.stock = stock;
 
         String ticker = stock.get(StockMarketKeys.TICKER).getAsString();
         long volumeValue = stock.get(StockMarketKeys.VOLUME).getAsLong();
@@ -75,6 +62,22 @@ public class ExtendedStockInfo extends ModComponent {
         change.setContent(changeContent);
         changePercentage.setContent(changePercentageContent);
         divYield.setContent(divYieldContent);
+    }
+
+    public void setStock(Position position) {
+        setStock(StockMarket.get(position.getTicker()));
+    }
+
+    @Override
+    public void tick() {
+        if (stock == null)
+            return;
+
+        volume.tick();
+        price.tick();
+        change.tick();
+        changePercentage.tick();
+        divYield.tick();
     }
 
     @Override

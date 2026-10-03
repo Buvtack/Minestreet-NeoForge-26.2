@@ -34,6 +34,9 @@ public class ModHelper {
     public static Screen screen() {
         return Minecraft.getInstance().gui.screen();
     }
+    public static TradingStationScreen tradingScreen() {
+        return (TradingStationScreen) screen();
+    }
 
     public static Player player() {
         return Minecraft.getInstance().player;

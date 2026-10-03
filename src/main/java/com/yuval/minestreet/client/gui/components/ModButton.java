@@ -111,9 +111,7 @@ public class ModButton extends DimensionalModComponent {
         graphics.blit(buttonTexture, x, y, x + halfWidth + remainder, y + height, 0.0f, (float) (halfWidth + remainder) / 200.0f, 0.0f, 1.0f);
         graphics.blit(buttonTexture, x + halfWidth + remainder, y, x + width, y + height, 1.0f - ((float) halfWidth / 200.0f), 1.0f, 0.0f, 1.0f);
 
-        //if (isMouseOver())
         boolean selected = panel.getSelectedButton() == this || panel.getSelectedInput() == this;
-        //int color = ColorHelper.lerpColor(fade(), backgroundColor, backgroundColor + ModColors.EXTRA_ALPHA.color);
         ModColor color = backgroundColor.alphaify(fade() / 3F);
         color = selected ? color.alphaify(0.4F) : color;
         graphics.fill(x + 1, y + 1, x + width - 1, y + height - 1, color.color);

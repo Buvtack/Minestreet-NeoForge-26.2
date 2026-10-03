@@ -5,6 +5,7 @@ import com.yuval.minestreet.CommonModHelper;
 import com.yuval.minestreet.StockMarket;
 import com.yuval.minestreet.StockMarketKeys;
 import com.yuval.minestreet.WolfOfMinestreet;
+import com.yuval.minestreet.client.ModHelper;
 import com.yuval.minestreet.client.Positions;
 import com.yuval.minestreet.client.StockMarketClient;
 import com.yuval.minestreet.client.gui.components.*;
@@ -190,7 +191,20 @@ public class TradingStationScreen extends ModScreen<TradingStationMenu> {
     }
 
     public void updatePositionEntryList() {
-        initPositions();
+        String selectedId = selectedPosition != null ? selectedPosition.getPosition().clientId() : null;
+
+        positions.clear();
+        int y = 30;
+        int x = width - PositionEntry.WIDTH - 5;
+        for (String id : Positions.positions.keySet()) {
+            Position position = Positions.positions.get(id);
+            PositionEntry entry = new PositionEntry(x, y, position);
+            if (position.clientId().equals(selectedId) && selectedStock == null)
+                selectedPosition = entry;
+
+            positions.add(new PositionEntry(x, y, position));
+            y += 2 + PositionEntry.HEIGHT;
+        }
     }
 
     @Override
@@ -360,14 +374,30 @@ public class TradingStationScreen extends ModScreen<TradingStationMenu> {
         if (panel.getSelectedButton() == null)
             return;
 
+        Order.Type type = panel.orderType();
+        if (type == Order.Type.SELL && selectedPosition == null)
+            return;
+
         String ticker = selectedEntry.getTicker();
         Identifier item = BuiltInRegistries.ITEM.getKey(selectedStack.getItem());
         double amount = panel.getAmount();
         double price = Double.parseDouble(StockMarket.getPrice(ticker));
         UUID ownerUUID = Minecraft.getInstance().player.getUUID();
-        Order.Type type = panel.orderType();
+
         Order order = new Order(ticker, item, amount, price, ownerUUID, type);
         WolfOfMinestreet.LOGGER.info("Sent order to the server");
+        ClientPacketDistributor.sendToServer(new SendOrderPacket(order.toJsonString()));
+    }
+
+    public void closePosition() {
+        Order order = new Order(
+                selectedPosition.getTicker(),
+                BuiltInRegistries.ITEM.getKey(selectedStack.getItem()),
+                selectedPosition.getPosition().worth(),
+                Double.parseDouble(StockMarket.getPrice(selectedPosition.getTicker())),
+                ModHelper.player().getUUID(),
+                Order.Type.SELL
+        );
         ClientPacketDistributor.sendToServer(new SendOrderPacket(order.toJsonString()));
     }
 

@@ -1,6 +1,7 @@
 package com.yuval.minestreet;
 
 import com.google.gson.*;
+import com.yuval.minestreet.client.ModHelper;
 import com.yuval.minestreet.common.Order;
 import com.yuval.minestreet.common.Position;
 import com.yuval.minestreet.network.packets.OrderResponsePacket;
@@ -18,6 +19,7 @@ import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Writer;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
@@ -37,11 +39,12 @@ public class StockMarket {
 
     private static final HttpClient client = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
+            .followRedirects(HttpClient.Redirect.NORMAL)
             .build();
 
     public static Map<String, JsonObject> storedStocks = new ConcurrentHashMap<>();
     public static final String[] INITIAL_TICKERS = { "VOO", "QQQ", "NVDA", "GOOGL", "AAPL", "TSLA", "MSFT", "META", "AMZN", "SMH", "VTI" };
-    public static final long CLEAN_INTERVAL = 300_000_000_000L;
+    public static final long CLEAN_INTERVAL = 900_000_000_000L; // 15 minutes
 
 //    private static final String VOO = "{\"symbol\":\"VOO\",\"currency\":\"USD\",\"regularMarketPrice\":703.078,\"chartPreviousClose\":696.71}";
 //    private static final String QQQ = "{\"symbol\":\"QQQ\",\"currency\":\"USD\",\"regularMarketPrice\":7014.47,\"chartPreviousClose\":708.69}";
@@ -62,6 +65,7 @@ public class StockMarket {
             for (String ticker : INITIAL_TICKERS)
                 fetchAndStore(ticker);
         });
+
 //        for (int i = 0; i < INITIAL_TICKERS.length; i++) {
 //            JsonObject stock = JsonParser.parseString(INITIAL_STOCKS[i]).getAsJsonObject();
 //            storedStocks.put(INITIAL_TICKERS[i], stock);
@@ -69,10 +73,11 @@ public class StockMarket {
     }
 
     public static void fetchAndStore(String ticker) {
+        //fetchAndStoreSummary(ticker);
         ticker = URLEncoder.encode(ticker, StandardCharsets.UTF_8);
         try {
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("https://query1.finance.yahoo.com/v8/finance/chart/" + ticker))
+                    .uri(URI.create("https://query1.finance.yahoo.com/v8/finance/chart/" + ticker + "?range=1y&interval=1d&events=div"))
                     .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
                     .build();
 
@@ -95,32 +100,56 @@ public class StockMarket {
         JsonObject dataToStore = new JsonObject();
         JsonObject nestedData = raw.getAsJsonObject("chart").getAsJsonArray("result").get(0).getAsJsonObject().getAsJsonObject("meta");
         JsonObject indicators = raw.getAsJsonObject("chart").getAsJsonArray("result").get(0).getAsJsonObject().getAsJsonObject("indicators");
+        JsonObject events = raw.getAsJsonObject("chart").getAsJsonArray("result").get(0).getAsJsonObject().getAsJsonObject("events");
         dataToStore.add(StockMarketKeys.TICKER, nestedData.get(StockMarketKeys.TICKER));
         dataToStore.add(StockMarketKeys.CURRENCY, nestedData.get(StockMarketKeys.CURRENCY));
         dataToStore.add(StockMarketKeys.PRICE, nestedData.get(StockMarketKeys.PRICE));
-        dataToStore.add(StockMarketKeys.CHART_PREVIOUS_CLOSE, nestedData.get(StockMarketKeys.CHART_PREVIOUS_CLOSE));
+        dataToStore.add(StockMarketKeys.REGULAR_MARKET_CHANGE_PERCENT, nestedData.get(StockMarketKeys.REGULAR_MARKET_CHANGE_PERCENT));
+        dataToStore.add(StockMarketKeys.CHANGE, nestedData.get(StockMarketKeys.CHANGE));
         dataToStore.add(StockMarketKeys.NAME, nestedData.get(StockMarketKeys.NAME));
         dataToStore.add(StockMarketKeys.FETCHED_TIME, JsonParser.parseString(Long.toString(System.nanoTime())));
         JsonArray volume = indicators.getAsJsonArray("quote").get(0).getAsJsonObject().getAsJsonArray(StockMarketKeys.VOLUME);
         dataToStore.addProperty(StockMarketKeys.VOLUME, getVolume(volume));
+        dataToStore.addProperty(StockMarketKeys.DIVIDEND_YIELD, getDivYield(events, nestedData));
+
         return dataToStore;
     }
 
-    private static int getVolume(JsonArray volume) {
-        int volumeResult = 0;
-        for (JsonElement element : volume) {
-            try {
-                volumeResult += element.getAsInt();
-            } catch (Exception e) {}
+    private static double getDivYield(JsonObject events, JsonObject nestedData) {
+        if (events == null)
+            return 0;
+
+        JsonObject dividends = events.getAsJsonObject("dividends");
+        if (dividends == null || dividends.keySet().isEmpty())
+            return 0;
+
+        double totalAmount = 0;
+
+        long lastDate = 0;
+        int numOfDividends = 0;
+        for (String key : dividends.keySet()) {
+            JsonObject current = dividends.getAsJsonObject(key);
+            long date = current.get("date").getAsLong();
+            if (date > lastDate) {
+                lastDate = date;
+                totalAmount = current.get(StockMarketKeys.AMOUNT).getAsDouble();
+            }
+            numOfDividends++;
         }
-        return volumeResult;
+        totalAmount *= numOfDividends;
+
+        double price = nestedData.get(StockMarketKeys.PRICE).getAsDouble();
+        return totalAmount / price * 100;
+    }
+
+    private static long getVolume(JsonArray volume) {
+        return volume.size() > 0 ? volume.get(0).getAsLong() : 0;
     }
 
     public static void searchAndStore(String searched) {
         if (searched.isBlank())
             return;
 
-        //searched = searched.toUpperCase().trim();
         searched = URLEncoder.encode(searched, StandardCharsets.UTF_8);
         try {
             HttpRequest request = HttpRequest.newBuilder()
@@ -180,43 +209,30 @@ public class StockMarket {
     }
 
     public static String getPreviousClosePrice(String ticker) {
-        JsonObject data = get(ticker);
-        if (data == null)
-            return "0";
-
-        return data.get(StockMarketKeys.CHART_PREVIOUS_CLOSE).getAsString();
+        double price = Double.parseDouble(getPrice(ticker));
+        double change = Double.parseDouble(getChange(ticker));
+        return Double.toString(price - change);
     }
 
     public static String getChange(String ticker) {
-        String price = getPrice(ticker);
-        String previousClose = getPreviousClosePrice(ticker);
+        JsonObject stock = storedStocks.get(ticker);
+        if (stock == null)
+            return "0";
 
-        double priceInt = Double.parseDouble(price);
-        double previousCloseInt = Double.parseDouble(previousClose);
-
-        BigDecimal result = new BigDecimal(priceInt - previousCloseInt);
-        return result.setScale(2, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString();
+        double change = stock.get(StockMarketKeys.CHANGE).getAsDouble();
+        return Double.toString(change);
     }
 
     public static String getChangePercentage(String ticker) {
-        String previousClose = getPreviousClosePrice(ticker);
-        String change = getChange(ticker);
-
-        double previousCloseInt = Double.parseDouble(previousClose);
-        if (previousCloseInt == 0)
-            return "Inf";
-
-        double changeInt = Double.parseDouble(change);
-        if (changeInt == 0)
+        JsonObject stock = storedStocks.get(ticker);
+        if (stock == null)
             return "0";
 
-        double percentage = changeInt / previousCloseInt * 100;
-        BigDecimal result = new BigDecimal(percentage);
-        return result.setScale(2, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString();
+        double change = stock.get(StockMarketKeys.REGULAR_MARKET_CHANGE_PERCENT).getAsDouble();
+        return Double.toString(change);
     }
 
     public static void clean() {
-        //storedStocks.clear();
         Set<String> keptTickers = new HashSet<>();
 
         for (String ticker : INITIAL_TICKERS) {
@@ -319,7 +335,11 @@ public class StockMarket {
         reward(position, toSave, owner, order);
 
         if (toSave != null) {
-            toSave.save();
+            if (toSave.worth() >= 1.0D)
+                toSave.save();
+            else
+                toSave.delete();
+
             PacketDistributor.sendToPlayer(owner, new OrderResponsePacket(true, toSave.toString()));
         } else
             position.delete();
@@ -349,6 +369,14 @@ public class StockMarket {
                 }
             }
         });
+    }
+
+    public static void savePositionFile(Path file, JsonObject root) {
+        try (Writer writer = Files.newBufferedWriter(file)) {
+            new GsonBuilder().setPrettyPrinting().create().toJson(root, writer);
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+        }
     }
 
     public static Path getOrInitPositionPath() {

@@ -1,6 +1,7 @@
 package com.yuval.minestreet.common;
 
 import com.google.gson.*;
+import com.yuval.minestreet.CommonModHelper;
 import com.yuval.minestreet.StockMarket;
 import com.yuval.minestreet.StockMarketKeys;
 import com.yuval.minestreet.WolfOfMinestreet;
@@ -8,8 +9,10 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
 
@@ -129,6 +132,7 @@ public class Position {
             if (is(object))
                 positions.remove(i);
         }
+        StockMarket.savePositionFile(positionFile, root);
 
         return this;
     }

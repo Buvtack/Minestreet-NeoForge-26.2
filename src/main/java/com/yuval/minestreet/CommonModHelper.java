@@ -5,10 +5,12 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.UUID;
@@ -39,12 +41,19 @@ public class CommonModHelper {
         return Math.max(guiScale - sub, 1) / guiScale;
     }
 
+    public static ServerPlayer player(UUID uuid) {
+        for (ServerPlayer player : ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayers())
+            if (player.getUUID().equals(uuid))
+                return player;
+
+        return null;
+    }
+
     public static Item item(Identifier id) {
         return BuiltInRegistries.ITEM.getValue(id);
     }
 
-    public static int getItemCount(ServerPlayer player, Identifier itemId) {
-        Item item = item(itemId);
+    public static int getItemCount(Player player, Item item) {
         int total = 0;
 
         for (ItemStack stack : player.getInventory())
@@ -56,6 +65,11 @@ public class CommonModHelper {
             total += offhand.getCount();
 
         return total;
+    }
+
+    public static int getItemCount(Player player, Identifier itemId) {
+        Item item = item(itemId);
+        return getItemCount(player, item);
     }
 
     public static int getAvailableInventorySpace(ServerPlayer player, Item item) {

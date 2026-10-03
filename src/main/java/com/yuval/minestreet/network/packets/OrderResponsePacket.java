@@ -31,7 +31,11 @@ public record OrderResponsePacket(boolean success, String position) implements C
                 context.enqueueWork(() -> {
                     JsonObject object = JsonParser.parseString(packet.position).getAsJsonObject();
                     Position position = Position.fromJsonObject(object);
-                    Positions.positions.put(position.clientId(), position);
+                    if (position.worth() >= 1.0D)
+                        Positions.positions.put(position.clientId(), position);
+                    else
+                        Positions.positions.remove(position.clientId());
+
                     if (ModHelper.screen() instanceof TradingStationScreen screen) {
                         screen.updatePositionEntryList();
                         screen.updateInventory();

@@ -3,6 +3,7 @@ package com.yuval.minestreet.client.gui.components;
 import com.yuval.minestreet.CommonModHelper;
 import com.yuval.minestreet.WolfOfMinestreet;
 import com.yuval.minestreet.client.gui.ColorHelper;
+import com.yuval.minestreet.client.gui.ModColor;
 import com.yuval.minestreet.client.gui.ModColors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipPositioner;
@@ -23,7 +24,7 @@ public class ModButton extends DimensionalModComponent {
     private Runnable onClick;
 
     private ModLabel text;
-    private int backgroundColor;
+    private ModColor backgroundColor;
     private int textColor;
     private TradingPanel panel;
     private ModTooltip tooltip = null;
@@ -35,7 +36,7 @@ public class ModButton extends DimensionalModComponent {
         this.onClick = onClick;
     }
 
-    public ModButton(int x, int y, int width, Runnable onClick, ModLabel text, int backgroundColor, int textColor) {
+    public ModButton(int x, int y, int width, Runnable onClick, ModLabel text, ModColor backgroundColor, int textColor) {
         this(x, y, width, onClick);
         this.text = text;
         this.backgroundColor = backgroundColor;
@@ -58,7 +59,7 @@ public class ModButton extends DimensionalModComponent {
         return this;
     }
 
-    public ModButton color(int color) {
+    public ModButton color(ModColor color) {
         backgroundColor = color;
         return this;
     }
@@ -88,7 +89,8 @@ public class ModButton extends DimensionalModComponent {
                     SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), 1.0F)
             );
 
-            onClick.run();
+            if (onClick != null)
+                onClick.run();
         }
 
         if (tooltip != null)
@@ -111,11 +113,12 @@ public class ModButton extends DimensionalModComponent {
 
         //if (isMouseOver())
         boolean selected = panel.getSelectedButton() == this || panel.getSelectedInput() == this;
-        int color = ColorHelper.lerpColor(fade(), backgroundColor, backgroundColor + ModColors.EXTRA_ALPHA.color);
-        color = selected ? backgroundColor + ModColors.EXTRA_ALPHA.color + 0x11000000 : color;
-        graphics.fill(x + 1, y + 1, x + width - 1, y + height - 1, color);
+        //int color = ColorHelper.lerpColor(fade(), backgroundColor, backgroundColor + ModColors.EXTRA_ALPHA.color);
+        ModColor color = backgroundColor.alphaify(fade() / 3F);
+        color = selected ? color.alphaify(0.4F) : color;
+        graphics.fill(x + 1, y + 1, x + width - 1, y + height - 1, color.color);
         if (selected)
-            graphics.outline(x, y, width, height, backgroundColor + ModColors.EXTRA_ALPHA.color);
+            graphics.outline(x, y, width, height, backgroundColor.alphaify(0.1F).color);
 
         text.render(graphics, mouseX, mouseY, partialTick);
 

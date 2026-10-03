@@ -33,20 +33,20 @@ public class ExtendedPositionInfo extends ModComponent {
     }
 
     @Override
-    public void tick() {
+    public void doTick() {
         if (position == null)
             return;
 
-        pnl.tick();
-        pnlPercentage.tick();
-        entryPrice.tick();
-        amount.tick();
+        pnl.doTick();
+        pnlPercentage.doTick();
+        entryPrice.doTick();
+        amount.doTick();
 
         String ticker = position.getTicker();
         double pnlValue = position.pnl();
         double pnlPercentageValue = position.pnlPercentage();
         double entryPriceValue = position.getPrice();
-        double amountValue = position.getAmount();
+        double amountValue = position.worth();
         Component pnlContent = Component.translatable(TranslationKeys.PNL).append(ModHelper.format(pnlValue)).withColor(ModHelper.getColor(pnlValue).color);
         Component pnlPercentageContent = Component.translatable(TranslationKeys.PNL_PERCENTAGE).append(ModHelper.format(pnlPercentageValue)).append("%").withColor(ModHelper.getColor(pnlPercentageValue).color);
         Component entryPriceContent = Component.translatable(TranslationKeys.ENTRY_PRICE).append(ModHelper.format(entryPriceValue));

@@ -1,6 +1,8 @@
 {
   "block.minestreet.trading_station": "Trading Station",
 
+  "minestreet.innerScreen.noAssetSelected": "No asset selected...",
+
   "minestreet.tradingPanel.title": "stock",
   "minestreet.tradingPanel.buy": "BUY",
   "minestreet.tradingPanel.sell": "SELL",

@@ -1,7 +1,9 @@
 package com.yuval.minestreet.client.gui.components;
 
 import com.google.gson.JsonObject;
+import com.yuval.minestreet.StockMarket;
 import com.yuval.minestreet.StockMarketKeys;
+import com.yuval.minestreet.WolfOfMinestreet;
 import com.yuval.minestreet.client.ModHelper;
 import com.yuval.minestreet.client.StockMarketClient;
 import com.yuval.minestreet.client.TranslationKeys;
@@ -15,9 +17,8 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TextColor;
-import net.minecraft.world.entity.player.Player;
 
-public class TradingPanel extends ModComponent {
+public class TradingPanel extends DimensionalModComponent {
 
     public static final int WIDTH = 228;
     public static final int HEIGHT = 168;
@@ -42,11 +43,8 @@ public class TradingPanel extends ModComponent {
 
     private ModButton send;
 
-    private JsonObject stock;
-    private Position position;
-
     public TradingPanel(int x, int y) {
-        super(x, y);
+        super(x, y, WIDTH, HEIGHT, 3);
         title = new ModLabel(x + WIDTH / 2, y + 5, Component.translatable(TranslationKeys.TRADING_PANEL_TITLE), ModColors.WHITE, ModLabel.Alignment.CENTER);
         selectedItemLabel = new ModLabel(x + 5, y + HEIGHT - 38, Component.translatable(TranslationKeys.TRADING_PANEL_SELECTED_ITEM), ModColors.WHITE, ModLabel.Alignment.LEFT);
         selectedItemCountLabel = new ModLabel(selectedItemLabel.x + 5, selectedItemLabel.y, Component.empty(), ModColors.WHITE, ModLabel.Alignment.LEFT);
@@ -100,13 +98,13 @@ public class TradingPanel extends ModComponent {
     }
 
     @Override
-    public void tick() {
+    public void doTick() {
         buy.tick();
         sell.tick();
         byQuantity.tick();
         byPercentage.tick();
 
-        if (position != null)
+        if (ModHelper.tradingScreen().getSelectedPosition() != null)
             closePosition.tick();
 
         orderInput.tick();
@@ -127,7 +125,7 @@ public class TradingPanel extends ModComponent {
 
     @Override
     public void doRender() {
-        if (stock == null)
+        if (ModHelper.tradingScreen().getSelectedEntry() == null)
             return;
 
         graphics.fill(x, y, x + WIDTH, y + HEIGHT, ModColors.STOCK_LIST_COLOR.color);
@@ -146,7 +144,7 @@ public class TradingPanel extends ModComponent {
         positionInfo.render(graphics, mouseX, mouseY, partialTick);
         byQuantity.render(graphics, mouseX, mouseY, partialTick);
         byPercentage.render(graphics, mouseX, mouseY, partialTick);
-        if (position != null)
+        if (ModHelper.tradingScreen().getSelectedPosition() != null)
             closePosition.render(graphics, mouseX, mouseY, partialTick);
     }
 
@@ -158,35 +156,27 @@ public class TradingPanel extends ModComponent {
         }
     }
 
-    public void setStock(JsonObject stock) {
-        this.stock = stock;
-        title.setContent(Component.literal(stock.get(StockMarketKeys.NAME).getAsString()));
-        stockInfo.setStock(stock);
-        reset();
-        positionInfo.setPosition(null);
-    }
+    public void refresh() {
+        PositionEntry positionEntry = ModHelper.tradingScreen().getSelectedPosition();
+        JsonObject stock = null;
+        if (positionEntry != null) {
+            Position position = ModHelper.tradingScreen().getSelectedPosition().getPosition();
+            positionInfo.setPosition(position);
+            stock = StockMarket.get(position.getTicker());
+        } else if (ModHelper.tradingScreen().getSelectedStock() != null) {
+            positionInfo.setPosition(null);
+            stock = ModHelper.tradingScreen().getSelectedStock().stock;
+        }
 
-    public void setPosition(Position position) {
-        JsonObject stock = StockMarketClient.get(position.getTicker());
-        setStock(stock);
-        positionInfo.setPosition(position);
-        this.position = position;
+        if (stock != null) {
+            title.setContent(Component.literal(stock.get(StockMarketKeys.NAME).getAsString()));
+            stockInfo.setStock(stock);
+            reset();
+        }
     }
 
     private void reset() {
         selectedButton = null;
-    }
-
-    public void refresh() {
-
-    }
-
-    public JsonObject getStock() {
-        return stock;
-    }
-
-    public Position getPosition() {
-        return position;
     }
 
     public ModButton getSelectedButton() {
@@ -207,6 +197,7 @@ public class TradingPanel extends ModComponent {
                 if (selectedButton == buy)
                     return ModHelper.getItemCount(screen.getSelectedStack()) * fraction;
                 else {
+                    Position position = ModHelper.tradingScreen().getSelectedPosition().getPosition();
                     if (position == null)
                         return 0;
 

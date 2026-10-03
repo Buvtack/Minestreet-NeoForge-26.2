@@ -31,10 +31,13 @@ public record SearchStockPacket(String searched) implements CustomPacketPayload 
 
                 JsonObject result = new JsonObject();
                 JsonArray array = new JsonArray();
+                String searched = packet.searched.toLowerCase();
                 for (String ticker : StockMarket.storedStocks.keySet()) {
-                    if (ticker.contains(packet.searched)) {
+                    JsonObject stock = StockMarket.storedStocks.get(ticker);
+                    String stockName = StockMarket.name(stock).toLowerCase();
+
+                    if (ticker.toLowerCase().contains(searched) || stockName.contains(searched))
                         array.add(StockMarket.storedStocks.get(ticker));
-                    }
                 }
                 result.add("array", array);
 

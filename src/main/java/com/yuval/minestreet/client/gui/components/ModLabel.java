@@ -23,7 +23,7 @@ public class ModLabel extends ModComponent {
     }
 
     @Override
-    public void tick() {
+    public void doTick() {
 
     }
 

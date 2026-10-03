@@ -38,6 +38,7 @@ public record SyncStockPacket(String stocks) implements CustomPacketPayload {
                 JsonArray array = jsonObject.get("array").getAsJsonArray();
                 array.forEach(element -> {
                     String ticker = element.getAsJsonObject().get(StockMarketKeys.TICKER).getAsString();
+                    WolfOfMinestreet.LOGGER.info("Received searched result: " + ticker);
                     StockMarket.storedStocks.put(ticker, element.getAsJsonObject());
                 });
 

@@ -69,15 +69,15 @@ public class ExtendedStockInfo extends ModComponent {
     }
 
     @Override
-    public void tick() {
+    public void doTick() {
         if (stock == null)
             return;
 
-        volume.tick();
-        price.tick();
-        change.tick();
-        changePercentage.tick();
-        divYield.tick();
+        volume.doTick();
+        price.doTick();
+        change.doTick();
+        changePercentage.doTick();
+        divYield.doTick();
     }
 
     @Override
@@ -116,7 +116,7 @@ public class ExtendedStockInfo extends ModComponent {
         }
 
         @Override
-        public void tick() {
+        public void doTick() {
 
         }
 

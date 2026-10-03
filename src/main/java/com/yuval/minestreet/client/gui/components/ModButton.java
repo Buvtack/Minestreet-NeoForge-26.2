@@ -1,23 +1,13 @@
 package com.yuval.minestreet.client.gui.components;
 
 import com.yuval.minestreet.CommonModHelper;
-import com.yuval.minestreet.WolfOfMinestreet;
-import com.yuval.minestreet.client.gui.ColorHelper;
 import com.yuval.minestreet.client.gui.ModColor;
 import com.yuval.minestreet.client.gui.ModColors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipPositioner;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
-import net.minecraft.client.sounds.SoundEngine;
-import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
-import net.minecraft.util.FormattedCharSequence;
-
-import java.util.List;
 
 public class ModButton extends DimensionalModComponent {
 
@@ -28,6 +18,7 @@ public class ModButton extends DimensionalModComponent {
     private int textColor;
     private TradingPanel panel;
     private ModTooltip tooltip = null;
+    private ModIcon icon = null;
 
     private boolean clickable = false;
 
@@ -74,12 +65,17 @@ public class ModButton extends DimensionalModComponent {
         return this;
     }
 
+    public ModButton icon(ModIcon icon) {
+        this.icon = icon;
+        return this;
+    }
+
     public ModButton build() {
         return this;
     }
 
     @Override
-    public void tick() {
+    public void doTick() {
         if (CommonModHelper.isNotLeftClicking())
             clickable = true;
 
@@ -111,7 +107,7 @@ public class ModButton extends DimensionalModComponent {
         graphics.blit(buttonTexture, x, y, x + halfWidth + remainder, y + height, 0.0f, (float) (halfWidth + remainder) / 200.0f, 0.0f, 1.0f);
         graphics.blit(buttonTexture, x + halfWidth + remainder, y, x + width, y + height, 1.0f - ((float) halfWidth / 200.0f), 1.0f, 0.0f, 1.0f);
 
-        boolean selected = panel.getSelectedButton() == this || panel.getSelectedInput() == this;
+        boolean selected = panel != null && (panel.getSelectedButton() == this || panel.getSelectedInput() == this);
         ModColor color = backgroundColor.alphaify(fade() / 3F);
         color = selected ? color.alphaify(0.4F) : color;
         graphics.fill(x + 1, y + 1, x + width - 1, y + height - 1, color.color);
@@ -123,6 +119,9 @@ public class ModButton extends DimensionalModComponent {
         if (tooltip != null && isMouseOver(mouseX, mouseY)) {
             tooltip.render(graphics, mouseX, mouseY, partialTick);
         }
+
+        if (icon != null)
+            icon.render(graphics, mouseX, mouseY, partialTick);
     }
 
     public void setText(ModLabel text) {

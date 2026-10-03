@@ -14,6 +14,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.UUID;
 
 public class Position {
@@ -23,6 +24,7 @@ public class Position {
     private double amount;
     private double price;
     private UUID ownerUUID;
+    private long date;
 
     public Position(Player owner, JsonObject stock, ItemStack stack, double count, double price) {
         ticker = StockMarket.get(stock.get(StockMarketKeys.TICKER).getAsString()).getAsString();
@@ -32,12 +34,13 @@ public class Position {
         ownerUUID = owner.getUUID();
     }
 
-    private Position(String ticker, Identifier itemId, double count, double price, UUID ownerUUID) {
+    private Position(String ticker, Identifier itemId, double count, double price, UUID ownerUUID, long date) {
         this.ticker = ticker;
         this.itemId = itemId;
         this.amount = count;
         this.price = price;
         this.ownerUUID = ownerUUID;
+        this.date = date;
     }
 
     public void save() {
@@ -75,6 +78,7 @@ public class Position {
         object.addProperty(StockMarketKeys.AMOUNT, amount);
         object.addProperty(StockMarketKeys.POSITION_PRICE, price);
         object.addProperty(StockMarketKeys.OWNER, ownerUUID.toString());
+        object.addProperty(StockMarketKeys.DATE, date);
         return object;
     }
 
@@ -97,12 +101,12 @@ public class Position {
 
         double totalAmount = amount + position.amount;
         if (totalAmount == 0)
-            return new Position(ticker, itemId, 0, 0, ownerUUID);
+            return new Position(ticker, itemId, 0, 0, ownerUUID, date);
 
         double thisWeight = amount / totalAmount;
         double otherWeight = position.amount / totalAmount;
         double newPrice = price * thisWeight + position.price * otherWeight;
-        return new Position(ticker, itemId, totalAmount, newPrice, ownerUUID);
+        return new Position(ticker, itemId, totalAmount, newPrice, ownerUUID, date);
     }
 
     public Position trim(Position position) {
@@ -117,7 +121,7 @@ public class Position {
         if (newAmount < 0)
             return null;
 
-        return new Position(ticker, itemId, newAmount, price, ownerUUID);
+        return new Position(ticker, itemId, newAmount, price, ownerUUID, date);
     }
 
     public Position delete() {
@@ -166,6 +170,10 @@ public class Position {
 
     public String serverId() {
         return ticker + "-" + itemId.toString() + "-" + ownerUUID.toString();
+    }
+
+    public long date() {
+        return date;
     }
 
     public boolean is(Position other) {
@@ -246,7 +254,10 @@ public class Position {
         double amount = object.get(StockMarketKeys.AMOUNT).getAsDouble();
         double price = object.get(StockMarketKeys.POSITION_PRICE).getAsDouble();
         UUID uuid = UUID.fromString(object.get(StockMarketKeys.OWNER).getAsString());
-        return new Position(ticker, itemId, amount, price, uuid);
+
+        long today = Instant.now().getEpochSecond();
+        long date = object.has(StockMarketKeys.DATE) ? object.get(StockMarketKeys.DATE).getAsLong() : today;
+        return new Position(ticker, itemId, amount, price, uuid, date);
     }
 
     public static Position fromOrder(Order order) {
@@ -255,6 +266,7 @@ public class Position {
         double amount = order.amount;
         double price = order.price;
         UUID ownerUUID = order.ownerUUID;
-        return new Position(ticker, itemId, amount, price, ownerUUID);
+        long date = Instant.now().getEpochSecond();
+        return new Position(ticker, itemId, amount, price, ownerUUID, date);
     }
 }

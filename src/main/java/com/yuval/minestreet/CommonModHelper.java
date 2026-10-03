@@ -13,6 +13,8 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.UUID;
 
 public class CommonModHelper {
@@ -92,5 +94,19 @@ public class CommonModHelper {
         player.getInventory().add(new ItemStack(item, amount));
         player.containerMenu.broadcastChanges();
         player.inventoryMenu.broadcastChanges();
+    }
+
+    public static String[] splitString(String string, char delimiter) {
+        List<String> list = new LinkedList<>();
+        String word = "";
+        for (char ch : string.toCharArray()) {
+            if (ch != delimiter)
+                word += ch;
+            else {
+                list.add(word);
+                word = "";
+            }
+        }
+        return list.toArray(String[]::new);
     }
 }

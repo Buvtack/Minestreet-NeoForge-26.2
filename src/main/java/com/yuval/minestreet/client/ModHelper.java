@@ -80,8 +80,6 @@ public class ModHelper {
         if (!line.isBlank())
             result.add(line);
 
-        WolfOfMinestreet.LOGGER.info("Result of splitting String: " + Integer.toString(result.size()));
-
         return result;
     }
 

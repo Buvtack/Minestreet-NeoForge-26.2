@@ -42,7 +42,7 @@ public class StockEntry extends ModEntry {
         percentage = new Section(Double.parseDouble(StockMarket.getChangePercentage(tickerStr)), "%", x + WIDTH * 3 / 4, y, 20, HEIGHT);
     }
 
-    public void tick() {
+    public void doTick() {
         if (CommonModHelper.isNotLeftClicking())
             clickable = true;
 

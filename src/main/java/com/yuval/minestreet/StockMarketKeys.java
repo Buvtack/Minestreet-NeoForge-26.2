@@ -9,10 +9,16 @@ public class StockMarketKeys {
     public static final String REGULAR_MARKET_CHANGE_PERCENT = "regularMarketChangePercent";
     public static final String CHANGE = "fulldayChange";
 
+    public static final String DATE = "date";
+    public static final String SPLIT_RATIO = "splitRatio";
+    public static final String NUMERATOR = "numerator";
+    public static final String DENOMINATOR = "denominator";
+
     public static final String FETCHED_TIME = "fetchedTime";
     public static final String NAME = "longName";
     public static final String VOLUME = "volume";
     public static final String DIVIDEND_YIELD = "dividend";
+    public static final String DIVIDENDS = "dividends";
 
     public static final String QUOTE_TYPE = "quoteType";
 

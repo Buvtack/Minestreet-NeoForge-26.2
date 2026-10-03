@@ -3,6 +3,7 @@ package com.yuval.minestreet.client.gui;
 public class ModColors {
 
     public static final ModColor STOCK_LIST_COLOR = new ModColor(0x3334E4EA);
+    public static final ModColor TRANSPARENT = new ModColor(0x00FFFFFF);
     public static final ModColor EXTRA_ALPHA = new ModColor(0x55000000);
     public static final ModColor DARK = new ModColor(0xFF202020);
     public static final ModColor DARKER = new ModColor(0xFF101010);

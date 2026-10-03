@@ -38,7 +38,7 @@ public record OrderResponsePacket(boolean success, String position) implements C
 
                     if (ModHelper.screen() instanceof TradingStationScreen screen) {
                         screen.updatePositionEntryList();
-                        screen.updateInventory();
+                        screen.refreshInventory();
                     }
                 });
             }

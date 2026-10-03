@@ -36,6 +36,8 @@ public class TradingStationScreen extends ModScreen<TradingStationMenu> {
             Identifier.fromNamespaceAndPath(WolfOfMinestreet.MODID, "textures/gui/container/trading_station.png");
 
     private Inventory inventory;
+    private byte inventoryRefreshTicks = 2;
+    private byte inventoryRefreshTicksRemaining = 2;
 
     private ModSlot[][] inventorySlots;
     private ModSlot[] hotbarSlots;
@@ -108,6 +110,10 @@ public class TradingStationScreen extends ModScreen<TradingStationMenu> {
         }
     }
 
+    public void refreshInventory() {
+        inventoryRefreshTicksRemaining = inventoryRefreshTicks;
+    }
+
     public void updateInventory() {
         inventory = Minecraft.getInstance().player.getInventory();
         initInventory();
@@ -140,6 +146,11 @@ public class TradingStationScreen extends ModScreen<TradingStationMenu> {
         for (int i = 0; i < stocks.size(); i++) {
             StockEntry entry = stocks.get(i);
             entry.tick();
+        }
+
+        if (inventoryRefreshTicksRemaining > 0) {
+            updateInventory();
+            inventoryRefreshTicksRemaining--;
         }
 
         for (PositionEntry entry : positions)

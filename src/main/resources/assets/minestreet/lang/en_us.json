@@ -18,5 +18,12 @@
   "minestreet.positionInfo.pnl": "Profit / Loss: ",
   "minestreet.positionInfo.pnlPercentage": "Profit / Loss%: ",
   "minestreet.positionInfo.entryPrice": "Entry Price: ",
-  "minestreet.positionInfo.amount": "Item Quantity: "
+  "minestreet.positionInfo.amount": "Item Quantity: ",
+
+  "minsetreet.fundamentals.assetType": "Type: ",
+  "minestreet.fundamentals.marketCap": "Market Cap: ",
+  "minestreet.fundamentals.aum": "AUM: ",
+  "minestreet.fundamentals.peRatio": "P/E Ratio: ",
+  "minestreet.fundamentals.fiftyTwoWeekHigh": "52 Week High: ",
+  "minestreet.fundamentals.fiftyTwoWeekLow": "52 Week Low: "
 }

@@ -17,6 +17,8 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TextColor;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.animal.wolf.Wolf;
 
 public class TradingPanel extends DimensionalModComponent {
 
@@ -50,48 +52,30 @@ public class TradingPanel extends DimensionalModComponent {
         selectedItemCountLabel = new ModLabel(selectedItemLabel.x + 5, selectedItemLabel.y, Component.empty(), ModColors.WHITE, ModLabel.Alignment.LEFT);
 
         buy = ModButton.builder(x + WIDTH / 2 - 45, y + 20, 40, Component.translatable(TranslationKeys.TRADING_PANEL_BUY), ModLabel.Alignment.CENTER)
-                .onClick(() -> {selectedButton = buy;})
-                .color(ModColors.BUY)
-                .panel(this)
-                .build();
+                .onClick(() -> {selectedButton = buy;}).color(ModColors.BUY).panel(this).build();
 
         sell = ModButton.builder(x + WIDTH / 2 + 5, y + 20, 40, Component.translatable(TranslationKeys.TRADING_PANEL_SELL), ModLabel.Alignment.CENTER)
-                .onClick(() -> {selectedButton = sell;})
-                .color(ModColors.SELL)
-                .panel(this)
-                .build();
+                .onClick(() -> {selectedButton = sell;}).color(ModColors.SELL).panel(this).build();
 
         orderInput = new TextBox(Minecraft.getInstance().font, x + 5, y + 48, 100, 20, Component.literal("Amount:"));
         orderInput.init();
         ((ScreenAccessor) Minecraft.getInstance().gui.screen()).callAddRenderableWidget(orderInput);
 
         byQuantity = ModButton.builder(orderInput.getX() + orderInput.getWidth(), orderInput.getY(), 20, Component.literal("ABS"), ModLabel.Alignment.CENTER)
-                .onClick(() -> selectedInput = byQuantity)
-                .color(ModColors.NEUTRAL)
-                .panel(this)
-                .build();
+                .onClick(() -> selectedInput = byQuantity).color(ModColors.NEUTRAL).panel(this).build();
         byQuantity.tooltip(new ModTooltip(byQuantity.x, byQuantity.y, 30, ModColors.STOCK_LIST_COLOR, Component.literal("Select this to enter the exact amount of the selected item you'd like to buy/sell.")));
 
         byPercentage = ModButton.builder(byQuantity.x + byQuantity.width, byQuantity.y, 20, Component.literal("%"), ModLabel.Alignment.CENTER)
-                .onClick(() -> selectedInput = byPercentage)
-                .color(ModColors.NEUTRAL)
-                .panel(this)
-                .build();
+                .onClick(() -> selectedInput = byPercentage).color(ModColors.NEUTRAL).panel(this).build();
         byPercentage.tooltip(new ModTooltip(byPercentage.x, byPercentage.y, 30, ModColors.STOCK_LIST_COLOR, Component.literal("Select this to enter the percentage you want to buy/sell of the selected item. (e.g. if you have 100 diamonds and you type 50, you will buy/sell 50 diamonds)")));
 
         closePosition = ModButton.builder(byPercentage.x + byPercentage.width, byPercentage.y, 82, Component.translatable(TranslationKeys.TRADING_PANEL_CLOSE_POSITION), ModLabel.Alignment.CENTER)
-                .onClick(() -> ((TradingStationScreen) ModHelper.screen()).closePosition())
-                .color(ModColors.SELL)
-                .panel(this)
-                .build();
+                .onClick(() -> ((TradingStationScreen) ModHelper.screen()).closePosition()).color(ModColors.SELL).panel(this).build();
 
         Component sendText = Component.literal("Send Order");
         int sendWidth = font.width(sendText.getString()) + 10;
         send = ModButton.builder(x + WIDTH / 2 - sendWidth / 2, y + HEIGHT - 25, sendWidth, sendText, ModLabel.Alignment.CENTER)
-                .onClick(ModHelper.tradingScreen()::send)
-                .color(ModColors.NEUTRAL.alphaify(0.15F))
-                .panel(this)
-                .build();
+                .onClick(ModHelper.tradingScreen()::send).color(ModColors.NEUTRAL.alphaify(0.15F)).panel(this).build();
 
         stockInfo = new ExtendedStockInfo(x + 5, y + 73);
         positionInfo = new ExtendedPositionInfo(x + WIDTH / 2 - 5, y + 73);
@@ -169,7 +153,7 @@ public class TradingPanel extends DimensionalModComponent {
         }
 
         if (stock != null) {
-            title.setContent(Component.literal(stock.get(StockMarketKeys.NAME).getAsString()));
+            title.setContent(Component.literal(StockMarket.name(stock)));
             stockInfo.setStock(stock);
             reset();
         }

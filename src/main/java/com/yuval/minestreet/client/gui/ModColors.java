@@ -14,4 +14,5 @@ public class ModColors {
     public static final ModColor PROFIT = new ModColor(0xFF08EE81);
     public static final ModColor LOSS = new ModColor(0xFFF23645);
     public static final ModColor NEUTRAL = new ModColor(0x55005EF5);
+    public static final ModColor GOLD = new ModColor(0xFFFFD20A);
 }

@@ -22,10 +22,12 @@ public class InnerTradingScreen extends DimensionalModComponent {
     public TradingPanel tradingPanel;
     public DividendPanel dividendPanel;
     public ChartPanel chartPanel;
+    public FundamentalsInfoPanel infoPanel;
 
     private ModButton tradingPanelTab;
     private ModButton dividendPanelTab;
     private ModButton chartPanelTab;
+    private ModButton infoPanelTab;
     private ModButton selectedTab;
 
     private Map<ModButton, ModComponent> buttonToPanelMap;
@@ -53,16 +55,24 @@ public class InnerTradingScreen extends DimensionalModComponent {
         chartPanelTab.icon(new ModIcon(chartPanelTab.x, chartPanelTab.y, chartPanelTab.width, chartPanelTab.height, Identifier.fromNamespaceAndPath(WolfOfMinestreet.MODID, "textures/gui/icons/chart_tab_icon.png")));
         chartPanelTab.addRenderTask("highlight", () -> highlight(chartPanelTab));
 
+        infoPanelTab = ModButton.builder(chartPanelTab.x + chartPanelTab.width, chartPanelTab.y, 20, Component.empty(), ModLabel.Alignment.CENTER)
+                .onClick(() -> selectedTab = infoPanelTab).color(ModColors.TRANSPARENT);
+        infoPanelTab.tooltip(new ModTooltip(infoPanelTab.x, infoPanelTab.y, 50, ModColors.STOCK_LIST_COLOR, Component.literal("Fundamentals (info)")));
+        infoPanelTab.icon(new ModIcon(infoPanelTab.x, infoPanelTab.y, infoPanelTab.width, infoPanelTab.height, Identifier.fromNamespaceAndPath(WolfOfMinestreet.MODID, "textures/gui/icons/info.png")));
+        infoPanelTab.addRenderTask("highlight", () -> highlight(infoPanelTab));
+
         selectedTab = tradingPanelTab;
 
         tradingPanel = new TradingPanel(x, y);
         dividendPanel = new DividendPanel(x, y);
         chartPanel = new ChartPanel(x, y);
+        infoPanel = new FundamentalsInfoPanel(x, y);
 
         buttonToPanelMap = new HashMap<>();
         buttonToPanelMap.put(tradingPanelTab, tradingPanel);
         buttonToPanelMap.put(dividendPanelTab, dividendPanel);
         buttonToPanelMap.put(chartPanelTab, chartPanel);
+        buttonToPanelMap.put(infoPanelTab, infoPanel);
     }
 
     private void highlight(ModButton tab) {
@@ -75,6 +85,7 @@ public class InnerTradingScreen extends DimensionalModComponent {
         tradingPanelTab.tick();
         dividendPanelTab.tick();
         chartPanelTab.tick();
+        infoPanelTab.tick();
 
         if (selectedTab == null)
             return;
@@ -88,16 +99,18 @@ public class InnerTradingScreen extends DimensionalModComponent {
         if (selectedTab != null)
             panel().render(graphics, mouseX, mouseY, partialTick);
 
-        if (ModHelper.tradingScreen().getSelectedEntry() == null)
+        if (ModHelper.tradingScreen().getSelectedEntry() == null && selectedTab != dividendPanelTab)
             emptyMessage.render(graphics, mouseX, mouseY, partialTick);
 
         tradingPanelTab.render(graphics, mouseX, mouseY, partialTick);
         dividendPanelTab.render(graphics, mouseX, mouseY, partialTick);
         chartPanelTab.render(graphics, mouseX, mouseY, partialTick);
+        infoPanelTab.render(graphics, mouseX, mouseY, partialTick);
     }
 
     public void refresh() {
         tradingPanel.refresh();
+        infoPanel.refresh();
     }
 
     @Override

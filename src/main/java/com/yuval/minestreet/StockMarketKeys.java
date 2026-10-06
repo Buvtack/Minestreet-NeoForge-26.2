@@ -17,7 +17,6 @@ public class StockMarketKeys {
     public static final String FETCHED_TIME = "fetchedTime";
     public static final String NAME = "longName";
     public static final String VOLUME = "volume";
-    public static final String DIVIDEND_YIELD = "dividend";
     public static final String DIVIDENDS = "dividends";
 
     public static final String QUOTE_TYPE = "quoteType";
@@ -29,4 +28,13 @@ public class StockMarketKeys {
     public static final String AMOUNT = "amount";
     public static final String OWNER = "ownerUUID";
     public static final String ORDER_TYPE = "orderType";
+
+    public static final String FUNDAMENTALS = "fundamentals";
+    public static final String AUM = "netAssets";
+    public static final String MARKET_CAP = "marketCap";
+    public static final String ASSET_TYPE = "quoteType";
+    public static final String DIVIDEND_YIELD = "dividendYield";
+    public static final String PE_RATIO = "trailingPE";
+    public static final String FIFTY_TWO_WEEK_HIGH = "fiftyTwoWeekHigh";
+    public static final String FIFTY_TWO_WEEK_LOW = "fiftyTwoWeekLow";
 }

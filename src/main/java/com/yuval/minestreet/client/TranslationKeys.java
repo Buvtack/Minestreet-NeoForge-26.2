@@ -20,4 +20,11 @@ public class TranslationKeys {
     public static final String PNL_PERCENTAGE = "minestreet.positionInfo.pnlPercentage";
     public static final String ENTRY_PRICE = "minestreet.positionInfo.entryPrice";
     public static final String AMOUNT = "minestreet.positionInfo.amount";
+
+    public static final String ASSET_TYPE = "minsetreet.fundamentals.assetType";
+    public static final String MARKET_CAP = "minestreet.fundamentals.marketCap";
+    public static final String AUM = "minestreet.fundamentals.aum";
+    public static final String PE_RATIO = "minestreet.fundamentals.peRatio";
+    public static final String FIFTY_TWO_WEEK_HIGH = "minestreet.fundamentals.fiftyTwoWeekHigh";
+    public static final String FIFTY_TWO_WEEK_LOW = "minestreet.fundamentals.fiftyTwoWeekLow";
 }

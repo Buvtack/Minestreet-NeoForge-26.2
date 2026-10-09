@@ -51,7 +51,7 @@ public class ExtendedStockInfo extends ModComponent {
         double priceValue = stock.get(StockMarketKeys.PRICE).getAsDouble();
         double changeValue = Double.parseDouble(StockMarket.getChange(ticker));
         double changePercentageValue = Double.parseDouble(StockMarket.getChangePercentage(ticker));
-        double divYieldValue = stock.get(StockMarketKeys.DIVIDEND_YIELD).getAsDouble();
+        double divYieldValue = StockMarket.dividendYield(stock);
         Component volumeContent = Component.translatable(TranslationKeys.VOLUME).append(ModHelper.format(volumeValue));
         Component priceContent = Component.translatable(TranslationKeys.PRICE).append(ModHelper.format(priceValue));
         Component changeContent = Component.translatable(TranslationKeys.CHANGE).append(ModHelper.format(changeValue)).withColor(ModHelper.getColor(changeValue).color);

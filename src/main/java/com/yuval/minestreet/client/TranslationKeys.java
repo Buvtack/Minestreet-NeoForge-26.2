@@ -27,4 +27,6 @@ public class TranslationKeys {
     public static final String PE_RATIO = "minestreet.fundamentals.peRatio";
     public static final String FIFTY_TWO_WEEK_HIGH = "minestreet.fundamentals.fiftyTwoWeekHigh";
     public static final String FIFTY_TWO_WEEK_LOW = "minestreet.fundamentals.fiftyTwoWeekLow";
+
+    public static final String PAST_RETURNS = "minestreet.fundamentals.pastReturns";
 }

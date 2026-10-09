@@ -37,4 +37,15 @@ public class StockMarketKeys {
     public static final String PE_RATIO = "trailingPE";
     public static final String FIFTY_TWO_WEEK_HIGH = "fiftyTwoWeekHigh";
     public static final String FIFTY_TWO_WEEK_LOW = "fiftyTwoWeekLow";
+
+    public static final String DAY_RETURN = "day";
+    public static final String WEEK_RETURN = "week";
+    public static final String MONTH_RETURN = "month";
+    public static final String HALF_RETURN = "half";
+    public static final String YTD_RETURN = "ytd";
+    public static final String YEAR_RETURN = "year";
+    public static final String FIVE_YEAR_RETURN = "fiveYears";
+    public static final String TEN_YEAR_RETURN = "tenYears";
+    public static final String ALL_TIME_RETURN = "allTime";
+    public static final String FETCHED_PAST_RETURNS = "fetchedPastReturns";
 }

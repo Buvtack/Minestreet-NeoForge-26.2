@@ -25,5 +25,7 @@
   "minestreet.fundamentals.aum": "AUM: ",
   "minestreet.fundamentals.peRatio": "P/E Ratio: ",
   "minestreet.fundamentals.fiftyTwoWeekHigh": "52 Week High: ",
-  "minestreet.fundamentals.fiftyTwoWeekLow": "52 Week Low: "
+  "minestreet.fundamentals.fiftyTwoWeekLow": "52 Week Low: ",
+
+  "minestreet.fundamentals.pastReturns": "Past Returns (including dividends):"
 }

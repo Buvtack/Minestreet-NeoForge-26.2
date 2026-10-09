@@ -134,7 +134,7 @@ public class TradingStationScreen extends ModScreen<TradingStationMenu> {
     private void initPositions() {
         positions.clear();
         int y = 30;
-        int x = width - PositionEntry.WIDTH - 5;
+        int x = width - PositionEntry.WIDTH - 2;
         for (String id : Positions.positions.keySet()) {
             Position position = Positions.positions.get(id);
             positions.add(new PositionEntry(x, y, position));
@@ -157,7 +157,6 @@ public class TradingStationScreen extends ModScreen<TradingStationMenu> {
         for (PositionEntry entry : positions)
             entry.tick();
 
-        //panel.tick();
         innerScreen.tick();
         searchStock.tick();
         String searched = searchStock.getValue();
@@ -202,7 +201,7 @@ public class TradingStationScreen extends ModScreen<TradingStationMenu> {
 
         positions.clear();
         int y = 30;
-        int x = width - PositionEntry.WIDTH - 5;
+        int x = width - PositionEntry.WIDTH - 2;
         for (String id : Positions.positions.keySet()) {
             Position position = Positions.positions.get(id);
             PositionEntry entry = new PositionEntry(x, y, position);

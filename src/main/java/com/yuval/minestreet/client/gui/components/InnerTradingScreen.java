@@ -37,7 +37,8 @@ public class InnerTradingScreen extends DimensionalModComponent {
 
         emptyMessage = new ModLabel(x + WIDTH / 2, y + HEIGHT / 2, Component.translatable(TranslationKeys.NO_ASSET_SELECTED), ModColors.WHITE, ModLabel.Alignment.CENTER);
 
-        tradingPanelTab = ModButton.builder(x + 5, y + HEIGHT - 25, 20, Component.empty(), ModLabel.Alignment.CENTER)
+        int screenHeight = ModHelper.screen().height;
+        tradingPanelTab = ModButton.builder(5, screenHeight - 25, 20, Component.empty(), ModLabel.Alignment.CENTER)
                 .onClick(() -> selectedTab = tradingPanelTab).color(ModColors.TRANSPARENT);
         tradingPanelTab.tooltip(new ModTooltip(tradingPanelTab.x, tradingPanelTab.y, 50, ModColors.STOCK_LIST_COLOR, Component.literal("Trading"))).build();
         tradingPanelTab.icon(new ModIcon(tradingPanelTab.x, tradingPanelTab.y, tradingPanelTab.width, tradingPanelTab.height, Identifier.fromNamespaceAndPath(WolfOfMinestreet.MODID, "textures/gui/icons/trading_tab_icon.png")));

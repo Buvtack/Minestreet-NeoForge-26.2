@@ -35,6 +35,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -50,6 +53,8 @@ public class StockMarket {
             .build();
 
     private static volatile String crumb;
+
+    public static ZoneId zone = ZoneId.of("America/New_York");
 
     public static Map<String, JsonObject> storedStocks = new ConcurrentHashMap<>();
     public static final String[] INITIAL_TICKERS = { "VOO", "QQQ", "NVDA", "GOOGL", "AAPL", "TSLA", "MSFT", "META", "AMZN", "SMH", "VTI" };
@@ -177,7 +182,7 @@ public class StockMarket {
         throw new IllegalStateException("Quote failed after crumb refresh");
     }
 
-    private static HttpResponse<String> getHttp(String url) {
+    public static HttpResponse<String> getHttp(String url) {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36")
@@ -206,6 +211,7 @@ public class StockMarket {
         JsonObject dataToStore = new JsonObject();
         extractChartData(raw, dataToStore);
         extractFundamentals(fundamentals, dataToStore);
+        extractPastReturns(dataToStore);
         return dataToStore;
     }
 
@@ -250,6 +256,47 @@ public class StockMarket {
             adjustPositionsForSplit(events, nestedData);
             collectDividends(events, nestedData, dataToStore);
         }
+    }
+
+    private static void extractPastReturns(JsonObject dataToStore) {
+        double day = dataToStore.get(StockMarketKeys.REGULAR_MARKET_CHANGE_PERCENT).getAsDouble();
+        String ticker = ticker(dataToStore);
+        if (storedStocks.containsKey(ticker) && storedStocks.get(ticker).has(StockMarketKeys.FETCHED_PAST_RETURNS)) {
+            JsonObject stock = storedStocks.get(ticker);
+            dataToStore.addProperty(StockMarketKeys.DAY_RETURN, day);
+            dataToStore.addProperty(StockMarketKeys.WEEK_RETURN, performance(stock).week());
+            dataToStore.addProperty(StockMarketKeys.MONTH_RETURN, performance(stock).month());
+            dataToStore.addProperty(StockMarketKeys.HALF_RETURN, performance(stock).half());
+            dataToStore.addProperty(StockMarketKeys.YTD_RETURN, performance(stock).ytd());
+            dataToStore.addProperty(StockMarketKeys.YEAR_RETURN, performance(stock).year());
+            dataToStore.addProperty(StockMarketKeys.FIVE_YEAR_RETURN, performance(stock).fiveYears());
+            dataToStore.addProperty(StockMarketKeys.TEN_YEAR_RETURN, performance(stock).tenYears());
+            dataToStore.addProperty(StockMarketKeys.ALL_TIME_RETURN, performance(stock).allTime());
+            dataToStore.addProperty(StockMarketKeys.FETCHED_PAST_RETURNS, true);
+        }
+
+        JsonObject allTime = PastPerformance.fetch(ticker, null);
+        JsonObject pastTenYears = PastPerformance.fetch(ticker, "10y", "1wk");
+
+        Double weekReturn = PastPerformance.getPastReturn(pastTenYears, () -> ZonedDateTime.now().minusWeeks(1));
+        Double monthReturn = PastPerformance.getPastReturn(pastTenYears, () -> ZonedDateTime.now().minusMonths(1));
+        Double halfReturn = PastPerformance.getPastReturn(pastTenYears, () -> ZonedDateTime.now().minusMonths(6));
+        Double ytdReturn = PastPerformance.getPastReturn(pastTenYears, () -> ZonedDateTime.now().withDayOfYear(1).truncatedTo(ChronoUnit.DAYS));
+        Double yearReturn = PastPerformance.getPastReturn(pastTenYears, () -> ZonedDateTime.now().minusYears(1));
+        Double fiveYearsReturn = PastPerformance.getPastReturn(pastTenYears, () -> ZonedDateTime.now().minusYears(5));
+        Double tenYearsReturn = PastPerformance.getPastReturn(pastTenYears, () -> ZonedDateTime.now().minusYears(10));
+        Double allTimeReturn = PastPerformance.getAllTimeReturn(allTime);
+
+        dataToStore.addProperty(StockMarketKeys.DAY_RETURN, day);
+        dataToStore.addProperty(StockMarketKeys.WEEK_RETURN, weekReturn);
+        dataToStore.addProperty(StockMarketKeys.MONTH_RETURN, monthReturn);
+        dataToStore.addProperty(StockMarketKeys.HALF_RETURN, halfReturn);
+        dataToStore.addProperty(StockMarketKeys.YTD_RETURN, ytdReturn);
+        dataToStore.addProperty(StockMarketKeys.YEAR_RETURN, yearReturn);
+        dataToStore.addProperty(StockMarketKeys.FIVE_YEAR_RETURN, fiveYearsReturn);
+        dataToStore.addProperty(StockMarketKeys.TEN_YEAR_RETURN, tenYearsReturn);
+        dataToStore.addProperty(StockMarketKeys.ALL_TIME_RETURN, allTimeReturn);
+        dataToStore.addProperty(StockMarketKeys.FETCHED_PAST_RETURNS, true);
     }
 
     private static void collectDividends(JsonObject events, JsonObject nestedData, JsonObject dataToStore) {
@@ -444,6 +491,26 @@ public class StockMarket {
         return null;
     }
 
+    private static void getLogo(String ticker, JsonObject dataToStore) {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("https://assets.parqet.com/logos/symbol/" + ticker + "?format=png"))
+                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+                .timeout(Duration.ofSeconds(10))
+                .build();
+
+        try {
+            HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
+
+            if (response.statusCode() != 200) {
+                return;
+            }
+
+            byte[] pngBytes = response.body();
+        } catch (IOException | InterruptedException e) {
+
+        }
+    }
+
     public static JsonObject get(String ticker) {
         ticker = ticker.toUpperCase().trim();
         if (!storedStocks.containsKey(ticker))
@@ -485,6 +552,14 @@ public class StockMarket {
 
         double change = stock.get(StockMarketKeys.REGULAR_MARKET_CHANGE_PERCENT).getAsDouble();
         return Double.toString(change);
+    }
+
+    public static String ticker(JsonObject stock) {
+        try {
+            return stock.get(StockMarketKeys.TICKER).getAsString();
+        } catch (Exception e) {
+            return "";
+        }
     }
 
     public static String name(JsonObject stock) {
@@ -572,6 +647,14 @@ public class StockMarket {
             return stock.get(StockMarketKeys.FIFTY_TWO_WEEK_LOW).getAsDouble();
         } catch (Exception e) {
             return 0;
+        }
+    }
+
+    public static PastPerformance performance(JsonObject stock) {
+        try {
+            return PastPerformance.fromStock(stock);
+        } catch (Exception E) {
+            return null;
         }
     }
 

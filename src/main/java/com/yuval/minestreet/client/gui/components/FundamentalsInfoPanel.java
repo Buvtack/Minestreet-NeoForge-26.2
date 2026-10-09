@@ -31,10 +31,15 @@ public class FundamentalsInfoPanel extends DimensionalModComponent {
 
     private List<ModLabel> labels;
 
+    private ModLabel pastReturnsTitle;
+    private PastReturnsSection pastReturns;
+
     public FundamentalsInfoPanel(int x, int y) {
         super(x, y, WIDTH, HEIGHT, 3);
 
         labels = new ArrayList<>();
+        pastReturnsTitle = new ModLabel(x + 5, height - 75, Component.translatable(TranslationKeys.PAST_RETURNS), ModColors.WHITE, ModLabel.Alignment.LEFT);
+        pastReturns = new PastReturnsSection(x + width / 2 - 94, height - 70, 188, 80);
 
         getStock();
         refresh();
@@ -44,6 +49,9 @@ public class FundamentalsInfoPanel extends DimensionalModComponent {
     public void doTick() {
         for (ModLabel label : labels)
             label.tick();
+
+        pastReturnsTitle.tick();
+        pastReturns.tick();
     }
 
     @Override
@@ -55,6 +63,9 @@ public class FundamentalsInfoPanel extends DimensionalModComponent {
         graphics.fill(x, y, x + WIDTH, y + HEIGHT, ModColors.STOCK_LIST_COLOR.color);
         for (ModLabel label : labels)
             label.render(graphics, mouseX, mouseY, partialTick);
+
+        pastReturnsTitle.render(graphics, mouseX, mouseY, partialTick);
+        pastReturns.render(graphics, mouseX, mouseY, partialTick);
     }
 
     private void reset() {
@@ -142,6 +153,8 @@ public class FundamentalsInfoPanel extends DimensionalModComponent {
                     ModColors.WHITE, ModLabel.Alignment.LEFT);
             labels.add(fiftyTwoWeekLow);
         }
+
+        pastReturns.refresh();
     }
 
     private void getStock() {

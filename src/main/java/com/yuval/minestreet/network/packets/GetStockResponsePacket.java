@@ -5,6 +5,7 @@ import com.google.gson.JsonParser;
 import com.yuval.minestreet.StockMarket;
 import com.yuval.minestreet.StockMarketKeys;
 import com.yuval.minestreet.WolfOfMinestreet;
+import com.yuval.minestreet.client.Logos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
@@ -18,7 +19,7 @@ public record GetStockResponsePacket(String stockJson) implements CustomPacketPa
             new Type<>(Identifier.fromNamespaceAndPath(WolfOfMinestreet.MODID, "get_stock_response"));
 
     public static final StreamCodec<FriendlyByteBuf, GetStockResponsePacket> CODEC = StreamCodec.composite(
-            ByteBufCodecs.STRING_UTF8, GetStockResponsePacket::stockJson,
+            ByteBufCodecs.stringUtf8(500_000), GetStockResponsePacket::stockJson,
             GetStockResponsePacket::new
     );
 
@@ -27,6 +28,7 @@ public record GetStockResponsePacket(String stockJson) implements CustomPacketPa
             context.enqueueWork(() -> {
                 JsonObject stock = JsonParser.parseString(packet.stockJson).getAsJsonObject();
                 StockMarket.storedStocks.put(stock.get(StockMarketKeys.TICKER).getAsString(), stock);
+                Logos.addLogo(stock);
             });
         }
     }

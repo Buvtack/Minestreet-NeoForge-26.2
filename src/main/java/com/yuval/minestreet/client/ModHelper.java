@@ -1,5 +1,6 @@
 package com.yuval.minestreet.client;
 
+import com.mojang.blaze3d.platform.NativeImage;
 import com.yuval.minestreet.WolfOfMinestreet;
 import com.yuval.minestreet.client.gui.ModColor;
 import com.yuval.minestreet.client.gui.ModColors;
@@ -92,5 +93,44 @@ public class ModHelper {
 
     public static ModColor getColor(Number num) {
         return num.doubleValue() >= 0 ? (num.doubleValue() > 0 ? ModColors.PROFIT : ModColors.WHITE) : ModColors.LOSS;
+    }
+
+    public static void roundImage(NativeImage image) {
+        int radius = image.getWidth() > image.getHeight() ? image.getWidth() / 2 : image.getHeight() / 2;
+        int rx = radius;
+        int ry = radius;
+        int rWidth = image.getWidth() - radius * 2;
+        int rHeight = image.getHeight() - radius * 2;
+        double softness = 4;
+        for (int x = 0; x < image.getWidth(); x++) {
+            for (int y = 0; y < image.getHeight(); y++) {
+                double distance = distanceFromRect(x, y, rx, ry, rWidth, rHeight) + 0.5;
+
+                double gap = distance - radius + 3;
+                float alpha = (float) Math.max(0.0, Math.min(1.0, gap / softness));
+
+                image.setPixelABGR(x, y, new ModColor(image.getPixel(x, y)).transparensify(alpha).toABGR());
+            }
+        }
+    }
+
+    private static double distanceFromRect(int x, int y, int rx, int ry, int rWidth, int rHeight) {
+        int distX;
+        if (x < rx)
+            distX = rx - x;
+        else if (x <= rx + rWidth)
+            distX = 0;
+        else
+            distX = x - rx + rWidth;
+
+        int distY;
+        if (y < ry)
+            distY = ry - y;
+        else if (y <= ry + rHeight)
+            distY = 0;
+        else
+            distY = y - ry + rHeight;
+
+        return Math.sqrt(distX * distX + distY * distY);
     }
 }

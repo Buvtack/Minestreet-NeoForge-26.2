@@ -6,6 +6,7 @@ import com.google.gson.JsonParser;
 import com.yuval.minestreet.StockMarket;
 import com.yuval.minestreet.StockMarketKeys;
 import com.yuval.minestreet.WolfOfMinestreet;
+import com.yuval.minestreet.client.Logos;
 import com.yuval.minestreet.client.gui.screens.TradingStationScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
@@ -25,7 +26,7 @@ public record InitStockPacket(String stocks) implements CustomPacketPayload {
     );
 
     public static final StreamCodec<FriendlyByteBuf, InitStockPacket> CODEC = StreamCodec.composite(
-            ByteBufCodecs.STRING_UTF8, InitStockPacket::stocks,
+            ByteBufCodecs.stringUtf8(500_000), InitStockPacket::stocks,
             InitStockPacket::new
     );
 
@@ -39,6 +40,7 @@ public record InitStockPacket(String stocks) implements CustomPacketPayload {
                     String ticker = stock.get(StockMarketKeys.TICKER).getAsString();
                     //shit
                     StockMarket.storedStocks.put(ticker, stock);
+                    Logos.addLogo(stock);
                 });
 
                 Screen screen = Minecraft.getInstance().gui.screen();

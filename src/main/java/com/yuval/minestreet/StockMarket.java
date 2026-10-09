@@ -1,14 +1,12 @@
 package com.yuval.minestreet;
 
 import com.google.gson.*;
-import com.yuval.minestreet.client.ModHelper;
 import com.yuval.minestreet.common.Order;
 import com.yuval.minestreet.common.Position;
 import com.yuval.minestreet.network.packets.OrderResponsePacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.Containers;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Item;
@@ -56,6 +54,7 @@ public class StockMarket {
 
     public static ZoneId zone = ZoneId.of("America/New_York");
 
+    public static Set<String> existingLogos = new HashSet<>();
     public static Map<String, JsonObject> storedStocks = new ConcurrentHashMap<>();
     public static final String[] INITIAL_TICKERS = { "VOO", "QQQ", "NVDA", "GOOGL", "AAPL", "TSLA", "MSFT", "META", "AMZN", "SMH", "VTI" };
     public static final long CLEAN_INTERVAL = 900_000_000_000L; // 15 minutes
@@ -139,14 +138,15 @@ public class StockMarket {
                     .build();
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            WolfOfMinestreet.LOGGER.info(response.body());
+            //WolfOfMinestreet.LOGGER.info(response.body());
 
             JsonObject responseInJson = JsonParser.parseString(response.body()).getAsJsonObject();
             JsonArray fundamentals = getFundamentalData(ticker);
 
             JsonObject dataToStore = extractData(responseInJson, fundamentals);
+            getLogo(ticker, dataToStore);
 
-            WolfOfMinestreet.LOGGER.info(dataToStore.toString());
+            //WolfOfMinestreet.LOGGER.info(dataToStore.toString());
 
             storedStocks.put(ticker, dataToStore);
         } catch (IOException | InterruptedException ioe) {
@@ -209,8 +209,9 @@ public class StockMarket {
 
     private static JsonObject extractData(JsonObject raw, JsonArray fundamentals) {
         JsonObject dataToStore = new JsonObject();
-        extractChartData(raw, dataToStore);
         extractFundamentals(fundamentals, dataToStore);
+        extractChartData(raw, dataToStore);
+        //extractFundamentals(fundamentals, dataToStore);
         extractPastReturns(dataToStore);
         return dataToStore;
     }
@@ -235,6 +236,9 @@ public class StockMarket {
 
         dataToStore.add(StockMarketKeys.FIFTY_TWO_WEEK_HIGH, nestedData.get(StockMarketKeys.FIFTY_TWO_WEEK_HIGH));
         dataToStore.add(StockMarketKeys.FIFTY_TWO_WEEK_LOW, nestedData.get(StockMarketKeys.FIFTY_TWO_WEEK_LOW));
+
+        if (nestedData.has(StockMarketKeys.DISPLAY_NAME))
+            dataToStore.add(StockMarketKeys.DISPLAY_NAME, nestedData.get(StockMarketKeys.DISPLAY_NAME));
     }
 
     private static void extractChartData(JsonObject raw, JsonObject dataToStore) {
@@ -244,9 +248,10 @@ public class StockMarket {
         dataToStore.add(StockMarketKeys.TICKER, nestedData.get(StockMarketKeys.TICKER));
         dataToStore.add(StockMarketKeys.CURRENCY, nestedData.get(StockMarketKeys.CURRENCY));
         dataToStore.add(StockMarketKeys.PRICE, nestedData.get(StockMarketKeys.PRICE));
-        dataToStore.add(StockMarketKeys.REGULAR_MARKET_CHANGE_PERCENT, nestedData.get(StockMarketKeys.REGULAR_MARKET_CHANGE_PERCENT));
+        dataToStore.add(StockMarketKeys.FULLDAY_CHANGE_PERCENT, nestedData.get(StockMarketKeys.FULLDAY_CHANGE_PERCENT));
         dataToStore.add(StockMarketKeys.CHANGE, nestedData.get(StockMarketKeys.CHANGE));
         dataToStore.add(StockMarketKeys.NAME, nestedData.get(StockMarketKeys.NAME));
+        dataToStore.add(StockMarketKeys.SHORT_NAME, nestedData.get(StockMarketKeys.SHORT_NAME));
         dataToStore.add(StockMarketKeys.FETCHED_TIME, JsonParser.parseString(Long.toString(System.nanoTime())));
         JsonArray volume = indicators.getAsJsonArray("quote").get(0).getAsJsonObject().getAsJsonArray(StockMarketKeys.VOLUME);
         dataToStore.addProperty(StockMarketKeys.VOLUME, getVolume(volume));
@@ -259,7 +264,7 @@ public class StockMarket {
     }
 
     private static void extractPastReturns(JsonObject dataToStore) {
-        double day = dataToStore.get(StockMarketKeys.REGULAR_MARKET_CHANGE_PERCENT).getAsDouble();
+        double day = dataToStore.get(StockMarketKeys.FULLDAY_CHANGE_PERCENT).getAsDouble();
         String ticker = ticker(dataToStore);
         if (storedStocks.containsKey(ticker) && storedStocks.get(ticker).has(StockMarketKeys.FETCHED_PAST_RETURNS)) {
             JsonObject stock = storedStocks.get(ticker);
@@ -313,31 +318,32 @@ public class StockMarket {
         long dividendDate = lastDividend.get(StockMarketKeys.DATE).getAsLong();
 
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(positionDir, "*.json")) {
-            for (Path positionFile : stream) {
-                boolean shouldBeSaved = false;
-                JsonObject root = Position.getFileAsJsonObject(positionFile);
-
-                JsonArray positions = root.getAsJsonArray(StockMarketKeys.POSITIONS);
-                for (JsonElement element : positions) {
-                    JsonObject positionJson = element.getAsJsonObject();
-                    Position position = Position.fromJsonObject(positionJson);
-                    long date = position.date();
-                    if (today >= dividendDate && date < dividendDate && position.getTicker().equalsIgnoreCase(nestedData.get(StockMarketKeys.TICKER).getAsString())) {
-                        JsonObject dividendsJson = root.get(StockMarketKeys.DIVIDENDS).getAsJsonObject();
-                        String itemIdStr = position.getItem().toString();
-                        double exisitingDividends = dividendsJson.has(itemIdStr) ? dividendsJson.get(itemIdStr).getAsDouble() : 0;
-                        double divYield = dataToStore.get(StockMarketKeys.DIVIDEND_YIELD).getAsDouble();
-                        int numOfDividends = dividends.keySet().size();
-                        double newDividend = position.worth() * divYield / numOfDividends;
-                        dividendsJson.addProperty(itemIdStr, exisitingDividends + newDividend);
-                        shouldBeSaved = true;
-
-                        positionJson.addProperty(StockMarketKeys.DATE, today);
-                    }
-                }
-                if (shouldBeSaved)
-                    savePositionFile(positionFile, root);
-            }
+            WolfOfMinestreet.LOGGER.info("Collecting Dividends!");
+//            for (Path positionFile : stream) {
+//                boolean shouldBeSaved = false;
+//                JsonObject root = Position.getFileAsJsonObject(positionFile);
+//
+//                JsonArray positions = root.getAsJsonArray(StockMarketKeys.POSITIONS);
+//                for (JsonElement element : positions) {
+//                    JsonObject positionJson = element.getAsJsonObject();
+//                    Position position = Position.fromJsonObject(positionJson);
+//                    long date = position.date();
+//                    if (today >= dividendDate && date < dividendDate && position.getTicker().equalsIgnoreCase(nestedData.get(StockMarketKeys.TICKER).getAsString())) {
+//                        JsonObject dividendsJson = root.get(StockMarketKeys.DIVIDENDS).getAsJsonObject();
+//                        String itemIdStr = position.getItem().toString();
+//                        double exisitingDividends = dividendsJson.has(itemIdStr) ? dividendsJson.get(itemIdStr).getAsDouble() : 0;
+//                        double divYield = dataToStore.get(StockMarketKeys.DIVIDEND_YIELD).getAsDouble();
+//                        int numOfDividends = dividends.keySet().size();
+//                        double newDividend = position.worth() * divYield / numOfDividends;
+//                        dividendsJson.addProperty(itemIdStr, exisitingDividends + newDividend);
+//                        shouldBeSaved = true;
+//
+//                        positionJson.addProperty(StockMarketKeys.DATE, today);
+//                    }
+//                }
+//                if (shouldBeSaved)
+//                    savePositionFile(positionFile, root);
+//            }
         } catch (IOException ioe) {
             ioe.printStackTrace();
         }
@@ -374,30 +380,30 @@ public class StockMarket {
         long splitDate = lastSplit.get(StockMarketKeys.DATE).getAsLong();
 
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(positionDir, "*.json")) {
-            for (Path positionsFile : stream) {
-                JsonObject root = Position.getFileAsJsonObject(positionsFile);
-                JsonArray positions = root.getAsJsonArray(StockMarketKeys.POSITIONS);
-                boolean shouldBeSaved = false;
-
-                for (JsonElement element : positions) {
-                    JsonObject positionJson = element.getAsJsonObject();
-
-                    Position position = Position.fromJsonObject(positionJson);
-                    long lastUpdate = positionJson.has(StockMarketKeys.DATE) ? positionJson.get(StockMarketKeys.DATE).getAsLong() : today;
-
-                    if (today >= splitDate && splitDate > lastUpdate && position.getTicker().equalsIgnoreCase(nestedData.get(StockMarketKeys.TICKER).getAsString())) {
-                        double numerator = lastSplit.get(StockMarketKeys.NUMERATOR).getAsDouble();
-                        double denominator = lastSplit.get(StockMarketKeys.DENOMINATOR).getAsDouble();
-                        double ratio = numerator / denominator;
-                        double price = position.getPrice();
-                        positionJson.addProperty(StockMarketKeys.POSITION_PRICE, price / ratio);
-                        positionJson.addProperty(StockMarketKeys.DATE, today);
-                        shouldBeSaved = true;
-                    }
-                }
-                if (shouldBeSaved)
-                    savePositionFile(positionsFile, root);
-            }
+//            for (Path positionsFile : stream) {
+//                JsonObject root = Position.getFileAsJsonObject(positionsFile);
+//                JsonArray positions = root.getAsJsonArray(StockMarketKeys.POSITIONS);
+//                boolean shouldBeSaved = false;
+//
+//                for (JsonElement element : positions) {
+//                    JsonObject positionJson = element.getAsJsonObject();
+//
+//                    Position position = Position.fromJsonObject(positionJson);
+//                    long lastUpdate = positionJson.has(StockMarketKeys.DATE) ? positionJson.get(StockMarketKeys.DATE).getAsLong() : today;
+//
+//                    if (today >= splitDate && splitDate > lastUpdate && position.getTicker().equalsIgnoreCase(nestedData.get(StockMarketKeys.TICKER).getAsString())) {
+//                        double numerator = lastSplit.get(StockMarketKeys.NUMERATOR).getAsDouble();
+//                        double denominator = lastSplit.get(StockMarketKeys.DENOMINATOR).getAsDouble();
+//                        double ratio = numerator / denominator;
+//                        double price = position.getPrice();
+//                        positionJson.addProperty(StockMarketKeys.POSITION_PRICE, price / ratio);
+//                        positionJson.addProperty(StockMarketKeys.DATE, today);
+//                        shouldBeSaved = true;
+//                    }
+//                }
+//                if (shouldBeSaved)
+//                    savePositionFile(positionsFile, root);
+//            }
         } catch (IOException ioe) {
             ioe.printStackTrace();
         }
@@ -492,6 +498,11 @@ public class StockMarket {
     }
 
     private static void getLogo(String ticker, JsonObject dataToStore) {
+        if (existingLogos.contains(ticker)) {
+            dataToStore.addProperty(StockMarketKeys.LOGO, storedStocks.get(ticker).get(StockMarketKeys.LOGO).getAsString());
+            return;
+        }
+
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("https://assets.parqet.com/logos/symbol/" + ticker + "?format=png"))
                 .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
@@ -502,12 +513,16 @@ public class StockMarket {
             HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
 
             if (response.statusCode() != 200) {
+                WolfOfMinestreet.LOGGER.error("Could not fetch logo for " + ticker);
                 return;
             }
 
             byte[] pngBytes = response.body();
+            String encodedBytes = Base64.getEncoder().encodeToString(pngBytes);
+            dataToStore.addProperty(StockMarketKeys.LOGO, encodedBytes);
+            existingLogos.add(ticker);
         } catch (IOException | InterruptedException e) {
-
+            e.printStackTrace();
         }
     }
 
@@ -550,7 +565,7 @@ public class StockMarket {
         if (stock == null)
             return "0";
 
-        double change = stock.get(StockMarketKeys.REGULAR_MARKET_CHANGE_PERCENT).getAsDouble();
+        double change = stock.get(StockMarketKeys.FULLDAY_CHANGE_PERCENT).getAsDouble();
         return Double.toString(change);
     }
 
@@ -567,6 +582,22 @@ public class StockMarket {
             return stock.get(StockMarketKeys.NAME).getAsString();
         } catch (Exception e) {
             return "";
+        }
+    }
+
+    public static String shortName(JsonObject stock) {
+        try {
+            return stock.get(StockMarketKeys.SHORT_NAME).getAsString();
+        } catch (Exception e) {
+            return name(stock);
+        }
+    }
+
+    public static String displayName(JsonObject stock) {
+        try {
+            return shortName(stock);
+        } catch (Exception e) {
+            return name(stock);
         }
     }
 
@@ -612,7 +643,7 @@ public class StockMarket {
 
     public static double changePercentage(JsonObject stock) {
         try {
-            return stock.get(StockMarketKeys.REGULAR_MARKET_CHANGE_PERCENT).getAsDouble();
+            return stock.get(StockMarketKeys.FULLDAY_CHANGE_PERCENT).getAsDouble();
         } catch (Exception e) {
             return 0;
         }

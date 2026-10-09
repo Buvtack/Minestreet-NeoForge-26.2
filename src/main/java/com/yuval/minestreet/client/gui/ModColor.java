@@ -148,4 +148,8 @@ public class ModColor {
     private int avg() {
         return (red() + green() + blue()) / 3;
     }
+
+    public int toABGR() {
+        return build(alpha(), blue(), green(), red());
+    }
 }

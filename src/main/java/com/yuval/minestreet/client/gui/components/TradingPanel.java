@@ -79,6 +79,7 @@ public class TradingPanel extends DimensionalModComponent {
 
         stockInfo = new ExtendedStockInfo(x + 5, y + 73);
         positionInfo = new ExtendedPositionInfo(x + WIDTH / 2 - 5, y + 73);
+        refresh();
     }
 
     @Override
@@ -114,6 +115,7 @@ public class TradingPanel extends DimensionalModComponent {
 
         graphics.fill(x, y, x + WIDTH, y + HEIGHT, ModColors.STOCK_LIST_COLOR.color);
         title.render(graphics, mouseX, mouseY, partialTick);
+        renderLogo();
 
         if (ModHelper.selectedStack())
             selectedItemLabel.render(graphics, mouseX, mouseY, partialTick);
@@ -130,6 +132,16 @@ public class TradingPanel extends DimensionalModComponent {
         byPercentage.render(graphics, mouseX, mouseY, partialTick);
         if (ModHelper.tradingScreen().getSelectedPosition() != null)
             closePosition.render(graphics, mouseX, mouseY, partialTick);
+    }
+
+    private void renderLogo() {
+        String ticker = ModHelper.tradingScreen().getSelectedEntry().getTicker().toLowerCase();
+        Identifier id = Identifier.fromNamespaceAndPath(WolfOfMinestreet.MODID, "logo/" + ticker);
+        int width = 16;
+        int height = 16;
+        int margin = 3;
+        int halfTitleWidth = font.width(title.content.getString()) / 2;
+        graphics.blit(id, title.x - width - margin - halfTitleWidth, title.y + font.lineHeight / 2 - height / 2, title.x - margin - halfTitleWidth, title.y + font.lineHeight / 2 + height / 2, 0, 1, 0, 1);
     }
 
     private void renderSelectedStackCount() {
@@ -153,7 +165,7 @@ public class TradingPanel extends DimensionalModComponent {
         }
 
         if (stock != null) {
-            title.setContent(Component.literal(StockMarket.name(stock)));
+            title.setContent(Component.literal(StockMarket.displayName(stock)));
             stockInfo.setStock(stock);
             reset();
         }

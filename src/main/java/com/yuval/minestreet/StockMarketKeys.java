@@ -6,7 +6,7 @@ public class StockMarketKeys {
     public static final String TICKER = "symbol";
     public static final String CURRENCY = "currency";
     public static final String CHART_PREVIOUS_CLOSE = "chartPreviousClose";
-    public static final String REGULAR_MARKET_CHANGE_PERCENT = "regularMarketChangePercent";
+    public static final String FULLDAY_CHANGE_PERCENT = "fulldayChangePercent";
     public static final String CHANGE = "fulldayChange";
 
     public static final String DATE = "date";
@@ -16,6 +16,8 @@ public class StockMarketKeys {
 
     public static final String FETCHED_TIME = "fetchedTime";
     public static final String NAME = "longName";
+    public static final String SHORT_NAME = "shortName";
+    public static final String DISPLAY_NAME = "displayName";
     public static final String VOLUME = "volume";
     public static final String DIVIDENDS = "dividends";
 
@@ -48,4 +50,6 @@ public class StockMarketKeys {
     public static final String TEN_YEAR_RETURN = "tenYears";
     public static final String ALL_TIME_RETURN = "allTime";
     public static final String FETCHED_PAST_RETURNS = "fetchedPastReturns";
+
+    public static final String LOGO = "logo";
 }

@@ -9,7 +9,8 @@
   "client": [
     "client.ScreenAccessor",
     "client.JeiBlockerMixin",
-    "client.JeiExtraBlocker"
+    "client.JeiExtraBlocker",
+    "client.JeiOverlayVanisher"
   ],
   "injectors": {
     "defaultRequire": 1

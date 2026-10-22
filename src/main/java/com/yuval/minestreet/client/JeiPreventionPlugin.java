@@ -27,6 +27,8 @@ public class JeiPreventionPlugin implements IMixinConfigPlugin {
             return LoadingModList.get().getModFileById("jei") != null;
         else if (mixinClassName.contains("JeiBookmarkBlocker"))
             return LoadingModList.get().getModFileById("jei") != null;
+        else if (mixinClassName.contains("JeiOverlayVanisher"))
+            return LoadingModList.get().getModFileById("jei") != null;
 
         return true;
     }

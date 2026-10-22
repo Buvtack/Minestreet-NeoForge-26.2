@@ -498,10 +498,10 @@ public class StockMarket {
     }
 
     private static void getLogo(String ticker, JsonObject dataToStore) {
-        if (existingLogos.contains(ticker)) {
-            dataToStore.addProperty(StockMarketKeys.LOGO, storedStocks.get(ticker).get(StockMarketKeys.LOGO).getAsString());
-            return;
-        }
+//        if (existingLogos.contains(ticker)) {
+//            dataToStore.addProperty(StockMarketKeys.LOGO, storedStocks.get(ticker).get(StockMarketKeys.LOGO).getAsString());
+//            return;
+//        }
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("https://assets.parqet.com/logos/symbol/" + ticker + "?format=png"))
@@ -709,6 +709,7 @@ public class StockMarket {
             }
 
         storedStocks.keySet().removeIf(ticker -> !keptTickers.contains(ticker));
+        existingLogos.removeIf(ticker -> !keptTickers.contains(ticker));
     }
 
     public static void execute(Order order) {

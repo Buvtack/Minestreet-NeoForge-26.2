@@ -7,6 +7,7 @@ import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
@@ -46,6 +47,9 @@ public class WolfOfMinestreetClient {
     static void onClientSetup(FMLClientSetupEvent event) {
         WolfOfMinestreet.LOGGER.info("HELLO FROM CLIENT SETUP");
         WolfOfMinestreet.LOGGER.info("MINECRAFT NAME >> {}", Minecraft.getInstance().getUser().getName());
+//        event.enqueueWork(() -> {
+//            boolean jeiPresent = ModList.get().isLoaded("jei");
+//        })
     }
 
     @SubscribeEvent

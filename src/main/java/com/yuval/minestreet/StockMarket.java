@@ -309,44 +309,62 @@ public class StockMarket {
             return;
 
         JsonObject dividends = events.get(StockMarketKeys.DIVIDENDS).getAsJsonObject();
-        JsonObject lastDividend = getLastDividend(dividends);
-        if (lastDividend == null)
-            return;
-
         Path positionDir = getOrInitPositionPath();
         long today = Instant.now().getEpochSecond();
-        long dividendDate = lastDividend.get(StockMarketKeys.DATE).getAsLong();
 
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(positionDir, "*.json")) {
             WolfOfMinestreet.LOGGER.info("Collecting Dividends!");
-//            for (Path positionFile : stream) {
-//                boolean shouldBeSaved = false;
-//                JsonObject root = Position.getFileAsJsonObject(positionFile);
-//
-//                JsonArray positions = root.getAsJsonArray(StockMarketKeys.POSITIONS);
-//                for (JsonElement element : positions) {
-//                    JsonObject positionJson = element.getAsJsonObject();
-//                    Position position = Position.fromJsonObject(positionJson);
-//                    long date = position.date();
-//                    if (today >= dividendDate && date < dividendDate && position.getTicker().equalsIgnoreCase(nestedData.get(StockMarketKeys.TICKER).getAsString())) {
-//                        JsonObject dividendsJson = root.get(StockMarketKeys.DIVIDENDS).getAsJsonObject();
-//                        String itemIdStr = position.getItem().toString();
-//                        double exisitingDividends = dividendsJson.has(itemIdStr) ? dividendsJson.get(itemIdStr).getAsDouble() : 0;
-//                        double divYield = dataToStore.get(StockMarketKeys.DIVIDEND_YIELD).getAsDouble();
-//                        int numOfDividends = dividends.keySet().size();
-//                        double newDividend = position.worth() * divYield / numOfDividends;
-//                        dividendsJson.addProperty(itemIdStr, exisitingDividends + newDividend);
-//                        shouldBeSaved = true;
-//
-//                        positionJson.addProperty(StockMarketKeys.DATE, today);
-//                    }
-//                }
-//                if (shouldBeSaved)
-//                    savePositionFile(positionFile, root);
-//            }
+
+            for (Path positionFile : stream) {
+                JsonObject positionsInJson = Position.getFileAsJsonObject(positionFile);
+                JsonArray positionsArray = positionsInJson.getAsJsonArray(StockMarketKeys.POSITIONS);
+
+                String ticker = nestedData.get(StockMarketKeys.TICKER).getAsString();
+                JsonArray relevantPositions = filterByTicker(positionsArray, ticker);
+                for (JsonElement positionElement : relevantPositions) {
+                    JsonObject position = positionElement.getAsJsonObject();
+                    long lastModifiedDate = position.get(StockMarketKeys.DATE).getAsLong();
+                    long dividendAmount = calculateDividendBasedOnDate(dividends, lastModifiedDate, position);
+                    position.addProperty(StockMarketKeys.DATE, Instant.now().getEpochSecond());
+                    String itemString = position.get(StockMarketKeys.ITEM).getAsString();
+                    JsonObject existingDividends = positionsInJson.getAsJsonObject(StockMarketKeys.DIVIDENDS);
+                    JsonElement existingDividend = existingDividends.get(itemString);
+                    if (existingDividend != null) {
+                        long existingDividendAmount = existingDividend.getAsLong();
+                        existingDividends.addProperty(itemString, dividendAmount + existingDividendAmount);
+                    } else
+                        existingDividends.addProperty(itemString, dividendAmount);
+
+                    savePositionFile(positionFile, positionsInJson);
+                }
+            }
         } catch (IOException ioe) {
             ioe.printStackTrace();
         }
+    }
+
+    private static long calculateDividendBasedOnDate(JsonObject dividends, long date, JsonObject position) {
+        double result = 0;
+        double shares = position.get(StockMarketKeys.AMOUNT).getAsDouble() / position.get(StockMarketKeys.POSITION_PRICE).getAsDouble();
+        for (String key : dividends.keySet()) {
+            JsonObject dividend = dividends.getAsJsonObject(key);
+            long dividendDate = dividend.get(StockMarketKeys.DATE).getAsLong();
+            if (dividendDate >= date) {
+                double sum = shares * dividend.get(StockMarketKeys.AMOUNT).getAsDouble();
+                result += sum;
+            }
+        }
+        return (long) Math.ceil(result);
+    }
+
+    private static JsonArray filterByTicker(JsonArray positions, String ticker) {
+        JsonArray filtered = new JsonArray();
+        for (JsonElement position : positions) {
+            JsonObject object = position.getAsJsonObject();
+            if (object.get(StockMarketKeys.TICKER).getAsString().equalsIgnoreCase(ticker))
+                filtered.add(object);
+        }
+        return filtered;
     }
 
     private static JsonObject getLastDividend(JsonObject dividends) {

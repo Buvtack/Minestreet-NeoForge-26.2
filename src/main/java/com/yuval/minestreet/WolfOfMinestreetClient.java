@@ -47,9 +47,6 @@ public class WolfOfMinestreetClient {
     static void onClientSetup(FMLClientSetupEvent event) {
         WolfOfMinestreet.LOGGER.info("HELLO FROM CLIENT SETUP");
         WolfOfMinestreet.LOGGER.info("MINECRAFT NAME >> {}", Minecraft.getInstance().getUser().getName());
-//        event.enqueueWork(() -> {
-//            boolean jeiPresent = ModList.get().isLoaded("jei");
-//        })
     }
 
     @SubscribeEvent

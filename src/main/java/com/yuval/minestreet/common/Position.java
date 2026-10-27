@@ -164,6 +164,10 @@ public class Position {
         return amount + pnl();
     }
 
+    public double shares() {
+        return amount / price;
+    }
+
     public String clientId() {
         return ticker + "-" + itemId.toString();
     }
